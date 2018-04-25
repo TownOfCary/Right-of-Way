@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # https://gist.github.com/robwierzbowski/5430952/
-# Create and push to a new github repo from the command line.  
-# Grabs sensible defaults from the containing folder and `.gitconfig`.  
+# Create and push to a new github repo from the command line.
+# Grabs sensible defaults from the containing folder and `.gitconfig`.
 # Refinements welcome.
 
 # Gather constant vars
@@ -11,7 +11,8 @@ GITHUBUSER=$(git config github.user)
 
 # Get user input
 read -p "New repo name (enter for ${PWD##*/}): " REPONAME
-read -p "Repo Description:" DESCRIPTION
+read -p "Repo Description: " DESCRIPTION
+read -p "Project Namespace: " NAMESPACE
 
 echo "Here we go..."
 # Curl some json to the github API oh damn we so fancy
@@ -20,6 +21,17 @@ curl -u ${GITHUBUSER} https://api.github.com/orgs/TownOfCary/repos -d "{\"name\"
 # Set the freshly created repo to the origin and push
 # You'll need to have added your public key to your github account
 git remote set-url origin git@github.com:TownOfCary/${REPONAME:-${CURRENTDIR}}.git
+
+sed -i -e "s/@@@/${NAMESPACE}/g" ./src/classes/PackageUtils.cls
+git add ./src
+
+echo "src/classes/PackageUtils.cls
+src/classes/PackageUtils.cls-meta.xml" >> .gitignore
+
+git add .gitignore
+
+git commit -m "Updated namespace of current project and added PackageUtils to .gitignore"
 git push --set-upstream origin master
+
 git checkout -b dev
 git push -u origin dev
