@@ -24,7 +24,8 @@ update_layouts.sh
 resource-bundles
 dev_ns.sh
 mm.log
-
+src/classes/PackageUtils.cls
+src/classes/PackageUtils.cls-meta.xml
 *.orig
 debug
 *.iml
