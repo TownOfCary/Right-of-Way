@@ -127,7 +127,7 @@ global without sharing class PackageScripts implements InstallHandler, Uninstall
             // Fill in Name and update description
             Framework.RegisteredApp toc = new Framework.RegisteredApp();
             toc.namespace = PackageUtils.namespace;
-            toc.name = '';
+            toc.name = '@PACKAGE_NAME@';
             toc.description = 'Managed Package Developed by TOC';
             toc.isManaged = true;
             toc.isEnabled = true;
@@ -160,23 +160,15 @@ global without sharing class PackageScripts implements InstallHandler, Uninstall
 
             // Account ** Routing Rule Extension **
             // ---------------------------------------------------------------------
-            Framework.RoutingRule aRule = new Framework.RoutingRule();
-            aRule.apexClass = Accounts.class.getName();
-            aRule.namespace = PackageUtils.namespace;
-            aRule.isEnabled = true;
-            aRule.sObjectName = SObjectType.Account.getName();
-            aRule.executionOrder = 0;
-            rules.add(aRule);
-
-            // Contact ** Routing Rule Extension **
-            // ---------------------------------------------------------------------
-            Framework.RoutingRule cRule = new Framework.RoutingRule();
-            cRule.apexClass = Contacts.class.getName();
-            cRule.namespace = PackageUtils.namespace;
-            cRule.isEnabled = true;
-            cRule.sObjectName = SObjectType.Contact.getName();
-            cRule.executionOrder = 0;
-            rules.add(cRule);
+            /* TEMPLATE FROM ROUTING RULES
+            Framework.RoutingRule objRule = new Framework.RoutingRule();
+            objRule.apexClass = CLASSNAME.class.getName();
+            objRule.namespace = PackageUtils.namespace;
+            objRule.isEnabled = true;
+            objRule.sObjectName = SObjectType.SOBJECTNAME.getName();
+            objRule.executionOrder = 0;
+            rules.add(objRule);
+            */
 
             Framework.Config.push(rules);
         }
