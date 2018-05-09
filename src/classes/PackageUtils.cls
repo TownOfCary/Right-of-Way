@@ -17,6 +17,6 @@
  * @author Ulas Kutuk
  **/
 public class PackageUtils {
-    public static final String namespace = 'HighUsage_ToC';
-    public static String nsp = 'HighUsage_ToC';
+    public static final String namespace = '@@@';
+    public static String nsp = '@@@';
 }
