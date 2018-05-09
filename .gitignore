@@ -29,3 +29,5 @@ debug
 *.iml
 .idea/
 IlluminatedCloud/
+src/classes/PackageUtils.cls
+src/classes/PackageUtils.cls-meta.xml
