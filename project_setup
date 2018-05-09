@@ -20,7 +20,8 @@ curl -u ${GITHUBUSER} https://api.github.com/orgs/TownOfCary/repos -d "{\"name\"
 
 # Set the freshly created repo to the origin and push
 # You'll need to have added your public key to your github account
-FULLREPONAME=$($REPONAME:$CURRENTDIR | sed / /-/g)
+FULLREPONAME=$(echo ${REPONAME:-${CURRENTDIR}} | sed -e "s/ /-/g")
+echo $FULLREPONAME
 git remote set-url origin git@github.com:TownOfCary/${FULLREPONAME}.git
 git remote -v
 
