@@ -40,3 +40,4 @@ git push --set-upstream origin master
 
 git checkout -b dev
 git push -u origin dev
+git update-index --assume-unchanged src/classes/PackageUtils.cls
