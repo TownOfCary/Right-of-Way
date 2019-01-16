@@ -127,7 +127,7 @@ global without sharing class PackageScripts implements InstallHandler, Uninstall
             // Fill in Name and update description
             Framework.RegisteredApp toc = new Framework.RegisteredApp();
             toc.namespace = PackageUtils.namespace;
-            toc.name = '@PACKAGE_NAME@';
+            toc.name = 'Right of Way';
             toc.description = 'Managed Package Developed by TOC';
             toc.isManaged = true;
             toc.isEnabled = true;
