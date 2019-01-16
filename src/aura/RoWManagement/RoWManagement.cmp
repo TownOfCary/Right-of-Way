@@ -1,0 +1,821 @@
+<aura:component controller="RoWManagementController" implements="flexipage:availableForAllPageTypes" access="global">
+    <aura:attribute name="assignedAppointments" type="List" />
+    <aura:attribute name="filteredAppointments" type="List" />
+    <aura:attribute name="saId" type="String" />
+    <aura:attribute name="existingSAResources" type="Map" />
+    <aura:attribute name="wo" type="List" default="" />
+    <aura:attribute name="sa" type="List" default="" />
+    <aura:attribute name="existingPurchaseList" type="List" default="" />
+    <aura:attribute name="existingProductList" type="List" default="" />
+    <aura:attribute name="woli" type="List" default="" />
+    <aura:attribute name="woliId" type="String" default="" />
+    <aura:attribute name="renderWO" type="Boolean" default="false" />
+    <aura:attribute name="crewMem" type="List" default="" />
+    <aura:attribute name="terMem" type="List" default="" />
+    <aura:attribute name="srToAssign" type="List" />
+    <aura:attribute name="srTimeChanges" type="Map" default="{}" />
+    <aura:attribute name="eqTimeChanges" type="Map" default="{}" />
+    <aura:attribute name="pcQuantChanges" type="Map" default="{}" />
+    <aura:attribute name="today" type="Date" />
+    <aura:attribute name="selectedRecord" type="String" access="public" />
+    <aura:attribute name="crewAndTime" type="List" default="" />
+    <aura:attribute name="equipmentTable" type="List" default="" />
+    <aura:attribute name="equipName" type="String" default="" />
+    <aura:attribute name="prodSearch" type="String" default="" />
+    <aura:attribute name="prodName" type="String" default="" />
+    <aura:attribute name="prodTable" type="List" default="" />
+    <aura:attribute name="memFiltered" type="Boolean" default="false"/>
+    <aura:attribute name="filteredTerMem" type="List" default="" />
+    <aura:attribute name="showSpinnerImage" type="Boolean" default="true"/>
+    <aura:attribute name="selectedSROnlyRows" type="List" default="[]"/>
+    <aura:attribute name="selectedRowsCount" type="Integer" default="0" />
+
+    <!-- vv tree grid nonsense vv -->
+    <aura:attribute name="crewGridColumns" type="List" default="[{}]"/>
+    <aura:attribute name="crewGridData" type="Object" default="[{}]"/>
+    <aura:attribute name="crewGridExpandedRows" type="Object" default="[]"/>
+    <aura:attribute name="terGridColumns" type="List" default="[{}]"/>
+    <aura:attribute name="terGridData" type="Object" default="[{}]"/>
+    <aura:attribute name="terGridExpandedRows" type="Object" default="[]"/>
+    <aura:attribute name="equipGridColumns" type="List" default="[{}]"/>
+    <aura:attribute name="equipGridData" type="Object" default="[{}]"/>
+    <aura:attribute name="equipGridExpandedRows" type="Object" default="[]"/>
+    <aura:attribute name="eqOnlyGridColumns" type="List" default="[{}]"/>
+    <aura:attribute name="eqOnlyGridData" type="Object" default="[{}]"/>
+    <aura:attribute name="existingEQGridExpandedRows" type="Object" default="[]"/>
+    <aura:attribute name="srOnlyGridColumns" type="List" default="[{}]"/>
+    <aura:attribute name="srOnlyGridData" type="Object" default="[{}]"/>
+    <aura:attribute name="existingSRGridExpandedRows" type="Object" default="[]"/>
+    <!-- ^^ tree grid nonsense ^^ -->
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:handler name="change" value="{!v.numItems}" action="{!c.itemsChange}" />
+    <aura:handler name="prodSearch" value="{!prodSearch}" action="{!c.productSearch}" />
+    <aura:handler event="aura:waiting" action="{!c.showSpinner}"/>
+    <aura:handler event="aura:doneWaiting" action="{!c.hideSpinner}"/>
+    <aura:set attribute="body">
+
+
+
+        <div class="slds-notify slds-transition-show slds-notify_alert slds-theme_alert-texture slds-theme_info slds-hide"  transition="slow" aura:id="statusAlert" role="alert">
+            <span class="slds-assistive-text">info</span>
+            <span class="slds-icon_container slds-icon-utility-user slds-m-right_x-small" title="Description of icon when needed" />
+            <h2>Service Appointment Status Updated</h2>
+            <button class="slds-button slds-notify__close slds-button_icon-inverse" title="Close">X
+                <span class="slds-assistive-text">x</span>
+            </button>
+        </div>
+
+        <div ontouchmove="{!c.handleTouchMove}" />
+
+        <div aura:id="cannotAssign" class="slds-hide" style="padding: 15px;">
+            <lightning:card >
+                <p> If this function is required by your job - please contact your Salesforce admin to request permission on your "Service Resource" record to update the "Can Assign Work" field. </p>
+            </lightning:card>
+        </div>
+        <div aura:id="canAssign" class="" id="all" style="padding: 15px; height: auto">
+            <ui:scrollerWrapper class="pageScrollSize ">
+                <div aura:id="appointmentSearch" onchange="{!c.updateSelect}">
+                    <ui:inputText aura:id="searchTerm" label="Search Appointments:" placeholder="Search Appointment Date or Subject"/>
+                </div>
+                <div aura:id="availableAppointments" class="slds-grid slds-gutters">
+                    <div class="slds-size_1-of-1" style="height: 650px;">
+
+                        <div class="slds-nowrap">
+                            <aura:iteration var="appointment" items="{!v.assignedAppointments}" indexVar="assignedAppointments">
+                                <article class="slds-card">
+                                    <div class="slds-card__header">
+                                        <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                                            <div class="slds-media__figure">
+											<span class="slds-icon_container slds-icon-standard-contact">
+												<lightning:icon iconName="standard:service_appointment" />
+											</span>
+                                            </div>
+                                            <div class="slds-media__body">
+                                                <h2 class="slds-grid">
+                                                    <a href="javascript:void(0);" class="slds-card__header-link slds-truncate slds-size_2-of-3 slds-wrap" title="[object Object]">
+                                                        <span class="slds-text-heading_small" value="{!'appt_' + appointment.Id}">{!appointment.ServiceAppointment.Subject}</span>
+                                                    </a>
+                                                    <div class="slds-size_1-of-3 slds-wrap">
+                                                        <div class="slds-no-flex" id="" value="{!appointment.ServiceAppointment.Id}">
+                                                            <button class="slds-button slds-button_neutral editSABtn slds-float_right" value="{!appointment.ServiceAppointment.Subject}" aura:id="{!appointment.ServiceAppointment.Id}" onclick="{!c.editAppointment}" id="{!appointment.ServiceAppointment.Id}">Edit</button>
+                                                        </div>
+                                                    </div>
+                                                </h2>
+                                            </div>
+                                        </header>
+                                    </div>
+                                    <div class="slds-card__body slds-card__body_inner">
+                                        <ul class="slds-wrap">
+                                            <li>Scheduled: <ui:outputDate value="{!appointment.ServiceAppointment.SchedStartTime}" /></li>
+                                            <li>Street: {!appointment.ServiceAppointment.Street}</li>
+                                            <!--<li>Asset: {!appointment.Asset__r.Name}</li>-->
+                                            <li>Status: {!appointment.ServiceAppointment.Status}</li>
+                                            <li>Duration: {!appointment.ServiceAppointment.Duration}</li>
+                                        </ul>
+
+                                    </div>
+                                    <footer class="slds-border_bottom">
+                                        <p style="font-size: 10px; text-align: center; padding-bottom: 5px;">Appointment Number: {!appointment.ServiceAppointment.AppointmentNumber}</p>
+                                    </footer>
+                                </article>
+                            </aura:iteration>
+                        </div>
+                    </div>
+                </div>
+                <div aura:id="filteredAppointments" class="slds-hide slds-grid slds-gutters">
+                    <div class="slds-size_1-of-1" style="">
+                        <ui:scrollerWrapper class="pageScrollSize ">
+                            <div class="slds-nowrap">
+                                <aura:iteration var="appointment" items="{!v.filteredAppointments}" indexVar="filteredAppointments">
+                                    <article class="slds-card">
+                                        <div class="slds-card__header">
+                                            <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                                                <div class="slds-media__figure">
+											<span class="slds-icon_container slds-icon-standard-contact">
+												<lightning:icon iconName="standard:service_appointment" />
+											</span>
+                                                </div>
+                                                <div class="slds-media__body">
+                                                    <h2 class="slds-grid">
+                                                        <a href="javascript:void(0);" class="slds-card__header-link slds-truncate slds-size_2-of-3 slds-wrap" title="[object Object]">
+                                                            <span class="slds-text-heading_small" value="{!'appt_' + appointment.Id}">{!appointment.ServiceAppointment.Subject}</span>
+                                                        </a>
+                                                        <div class="slds-size_1-of-3 slds-wrap">
+                                                            <div class="slds-no-flex" id="" value="{!appointment.ServiceAppointment.Id}">
+                                                                <button class="slds-button slds-button_neutral editSABtn slds-float_right" value="{!appointment.ServiceAppointment.Subject}" aura:id="{!appointment.ServiceAppointment.Id}" onclick="{!c.editAppointment}" id="{!appointment.ServiceAppointment.Id}">Edit</button>
+                                                            </div>
+                                                        </div>
+                                                    </h2>
+                                                </div>
+                                            </header>
+                                        </div>
+                                        <div class="slds-card__body slds-card__body_inner">
+                                            <ul class="slds-wrap">
+                                                <li>Scheduled: <ui:outputDate value="{!appointment.ServiceAppointment.SchedStartTime}" /></li>
+                                                <li>Street: {!appointment.ServiceAppointment.Street}</li>
+                                                <!--<li>Asset: {!appointment.Asset__r.Name}</li>-->
+                                                <li>Status: {!appointment.ServiceAppointment.Status}</li>
+                                                <li>Duration: {!appointment.ServiceAppointment.Duration}</li>
+                                            </ul>
+
+                                        </div>
+                                        <footer class="slds-border_bottom">
+                                            <p style="font-size: 10px; text-align: center; padding-bottom: 5px;">Appointment Number: {!appointment.ServiceAppointment.AppointmentNumber}</p>
+                                        </footer>
+                                    </article>
+                                </aura:iteration>
+                            </div>
+                        </ui:scrollerWrapper>
+                    </div>
+                </div>
+            </ui:scrollerWrapper>
+        </div>
+
+        <div aura:id="woScreen" class="slds-hide" style="height: 650px;">
+		<span class="slds-icon_container slds-icon-utility-back" style="padding-bottom: 5px;" title="" onclick="{!c.showAppts}">
+			<lightning:icon iconName="utility:back" size="medium" alternativeText="Return to List"/>
+			<span class="slds-assistive-text"></span>
+		</span>
+            <!--<ui:scrollerWrapper class="pageScrollSize ">-->
+            <div class="slds-card slds-grid slds-grid_align-center">
+                <ui:button class="slds-size_1-of-4 slds-button slds-truncate slds-wrap slds-button_neutral addBtn addCrewBtn" aura:id="addCrewBtn" press="{!c.addButton}">Crew</ui:button>
+                <ui:button class="slds-size_1-of-4 slds-button slds-truncate slds-wrap slds-button_neutral addBtn addTerBtn" aura:id="addTerBtn" press="{!c.addButton}">Territory</ui:button>
+                <ui:button class="slds-size_1-of-4 slds-button slds-truncate slds-button_neutral addBtn addEquipBtn" aura:id="addEquipBtn" press="{!c.addButton}">Equipment</ui:button>
+                <ui:button class="slds-size_1-of-4 slds-button slds-truncate slds-button_neutral addBtn addProdBtn" aura:id="addProdBtn" press="{!c.addButton}">Consumables</ui:button>
+            </div>
+            <div class="slds-card slds-grid slds-grid_align-center">
+                <ui:button class="slds-button slds-button_neutral saStatusBtn slds-size_1-of-3 inProgBtn" aura:id="inProg" press="{!c.statusUpdate}">In Progress</ui:button>
+                <ui:button class="slds-button slds-button_neutral saStatusBtn slds-size_1-of-3 onHoldBtn" aura:id="onHold" press="{!c.statusUpdate}">On Hold</ui:button>
+                <ui:button class="slds-button slds-button_neutral saStatusBtn slds-size_1-of-3 completeBtn" aura:id="complete" press="{!c.statusUpdate}">Complete</ui:button>
+            </div>
+            <article aura:id="" class="slds-card" >
+                <aura:iteration var="woData" items="{!v.wo}" indexVar="w">
+                    <table class="slds-table slds-table_bordered slds-table_cell-buffer">
+                        <thead class="recordDetail">
+                        <tr class="slds-text-title_caps">
+                            <th scope="col">
+                                <div class="slds-truncate" title="Type">Type</div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate" title="Status">Status</div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate" title="Reference">Reference</div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate" title="Date">Date</div>
+                            </th>
+                            <th scope="col">
+                                <div class="slds-truncate" title="Task">Task</div>
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <th scope="row" data-label="Type">
+                                <div class="slds-truncate" title="Work Order">Work Order</div>
+                            </th>
+                            <th scope="row" data-label="Status">
+                                <div class="slds-truncate" title="{!woData.saWOLI.WorkOrder.Status}">{!woData.saWOLI.WorkOrder.Status}</div>
+                            </th>
+                            <th scope="row" data-label="Reference">
+                                <div class="slds-truncate" name="{!woData.saWOLI.WorkOrderId}" title="{!woData.saWOLI.WorkOrder.WorkOrderNumber}"><lightning:button aura:id="workOrderId" name="{!woData.saWOLI.WorkOrderId}" class="recordBtn" onclick="{!c.recordPreview}">{!woData.saWOLI.WorkOrder.WorkOrderNumber}</lightning:button></div>
+                            </th>
+                            <th scope="row" data-label="Date">
+                                <div class="slds-truncate" title="{!woData.saWOLI.WorkOrder.Due_Date__c}"><ui:outputDate value="{!woData.saWOLI.WorkOrder.Due_Date__c}" /></div>
+                            </th>
+                            <th scope="row" data-label="Task">
+                                <div class="slds-truncate" title="{!woData.saWOLI.WorkOrder.Subject}">{!woData.saWOLI.WorkOrder.Subject}</div>
+                            </th>
+                        </tr>
+                        <tr>
+                            <th scope="row" data-label="Type">
+                                <div class="slds-truncate" title="WOLI">WOLI</div>
+                            </th>
+                            <th scope="row" data-label="Status">
+                                <div class="slds-truncate" title="{!woData.saWOLI.Status}">{!woData.saWOLI.Status}</div>
+                            </th>
+                            <th scope="row" data-label="Reference">
+                                <div class="slds-truncate" name="{!woData.saWOLI.Id}" title="{!woData.saWOLI.LineItemNumber}"><lightning:button name="{!woData.saWOLI.Id}" class="recordBtn" onclick="{!c.recordPreview}">{!woData.saWOLI.LineItemNumber}</lightning:button></div>
+                            </th>
+                            <th scope="row" data-label="Date">
+                                <div class="slds-truncate" title="{!woData.saWOLI.Due_Date__c}"><ui:outputDate value="{!woData.saWOLI.Due_Date__c}" /></div>
+                            </th>
+                            <th scope="row" data-label="Task">
+                                <div class="slds-truncate" title="{!woData.saWOLI.Subject}">{!woData.saWOLI.Subject}</div>
+                            </th>
+                        </tr>
+                        <tr>
+                            <th scope="row" data-label="Type">
+                                <div class="slds-truncate" title="SA">SA</div>
+                            </th>
+                            <th scope="row" data-label="Status">
+                                <div class="slds-truncate" title="{!woData.sa.Status}">{!woData.sa.Status}</div>
+                            </th>
+                            <th scope="row" data-label="Reference">
+                                <div class="slds-truncate" name="{!woData.sa.Id}" title="{!woData.sa.AppointmentNumber}"><lightning:button name="{!woData.sa.Id}" class="recordBtn" onclick="{!c.recordPreview}">{!woData.sa.AppointmentNumber}</lightning:button></div>
+                            </th>
+                            <th scope="row" data-label="Date">
+                                <div class="slds-truncate" title="{!woData.sa.SchedStartTime}"><ui:outputDate value="{!woData.sa.SchedStartTime}" /></div>
+                            </th>
+                            <th scope="row" data-label="Task">
+                                <div class="slds-truncate" title="{!woData.sa.Subject}">{!woData.sa.Subject}</div>
+                            </th>
+                        </tr>
+                        </tbody>
+                    </table>
+                </aura:iteration>
+            </article>
+            <ui:scrollerWrapper class="pageScrollSize ">
+                <article aura:id="crewTree" class="slds-hide slds-card" >
+                    <div class="slds-card__header">
+                        <h2 style="font-size: 18px;">My Crew Time Sheet Entries:</h2>
+                    </div>
+                    <div class="slds-card__body slds-card__body_inner">
+                        <lightning:treeGrid columns="{!v.crewGridColumns}"
+                                            data="{!v.crewGridData}"
+                                            expandedRows="{!v.crewGridExpandedRows}"
+                                            keyField="name"
+                                            hideCheckboxColumn="false"
+                        />
+                    </div>
+                </article>
+                <article aura:id="terTree" class="slds-card slds-hide" >
+                    <div class="slds-card__header">
+                        <h2 style="font-size: 18px;">Territory Time Sheet Entries:</h2>
+                    </div>
+                    <div class="slds-card__body slds-card__body_inner">
+                        <lightning:treeGrid columns="{!v.terGridColumns}"
+                                            data="{!v.terGridData}"
+                                            expandedRows="{!v.terGridExpandedRows}"
+                                            keyField="name"
+                                            hideCheckboxColumn="false"
+                        />
+                    </div>
+                </article>
+                <article aura:id="equipTree" class="slds-card slds-hide" >
+                    <div class="slds-card__header">
+                        <h2 style="font-size: 18px;">Equipment Time Sheet Entries:</h2>
+                    </div>
+                    <div class="slds-card__body slds-card__body_inner">
+                        <lightning:treeGrid columns="{!v.equipGridColumns}"
+                                            data="{!v.equipGridData}"
+                                            expandedRows="{!v.equipGridExpandedRows}"
+                                            keyField="name"
+                                            hideCheckboxColumn="false"
+                        />
+                    </div>
+                </article>
+                <article aura:id="eqOnly" class="slds-hide slds-card" >
+                    <div class="slds-card__header">
+                        <ui:button class="slds-button slds-button_neutral saStatusBtn slds-size_1-of-3 showEqBtn" press="{!c.showExistEquip}">Prev Equip Hours:</ui:button>
+                    </div>
+                    <div aura:id="existEquipTree" class="slds-card__body slds-card__body_inner slds-hide">
+                        <lightning:treeGrid columns="{!v.eqOnlyGridColumns}"
+                                            data="{!v.eqOnlyGridData}"
+                                            expandedRows="{!v.existingEQGridExpandedRows}"
+                                            keyField="name"
+                                            hideCheckboxColumn="false"
+                        />
+                    </div>
+                </article>
+                <article aura:id="srOnly" class="slds-hide slds-card" >
+                    <div class="slds-card__header">
+                        <ui:button class="slds-button slds-button_neutral saStatusBtn slds-size_1-of-3 showEntrBtn" press="{!c.showExistEntries}">Prev Res Entries:</ui:button>
+                    </div>
+                    <div aura:id="existEntryTree" class="slds-hide slds-card__body slds-card__body_inner">
+                        <lightning:treeGrid columns="{!v.srOnlyGridColumns}"
+                                            data="{!v.srOnlyGridData}"
+                                            expandedRows="{!v.existingSRGridExpandedRows}"
+                                            keyField="name"
+                                            hideCheckboxColumn="false"
+                        />  <!--onrowselection="{!c.onTreeSelect}"
+						selectedRows="{!v.selectedSROnlyRows}"-->
+                    </div>
+                </article>
+            </ui:scrollerWrapper>
+
+
+        </div>
+        <!-- loading spinner, need to max out the display and keep it in the center. -->
+        <div aura:id="loadModal" class="slds-hide" style="z-index: 1987;">
+            <section role="dialog" tabindex="-1" aura:id="loaderModal" class="loaderModal slds-modal slds-fade-in-open slds-modal_small slds-align_absolute-center" aria-labelledby="modal-heading-01" aria-modal="false" aria-describedby="modal-content-id-1">
+                <div class="slds-modal__container">
+                    <ui:scrollerWrapper class="pageScrollSize ">
+                        <div class="slds-grid slds-grow" >
+                            <div class="slds-grid slds-grid_vertical">
+                                <div class="slds-p-vertical_x-small slds-p-horizontal_small slds-shrink-none">
+                                    <div class="slds-scrollable slds-grow">
+                                        <img class="" style="z-index: 1987;" src="{!$Resource.PubWorks_Loader}" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </ui:scrollerWrapper>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+        <!-- Modals -->
+        <!-- Record Modal -->
+        <div aura:id="viewRecordBtnModal" class="slds-hide" style="z-index: 1776;">
+            <section role="dialog" tabindex="-1" style="max-height: 60rem; min-height: 60rem;" class="slds-modal slds-fade-in-open slds-modal_large" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
+                <div class="slds-modal__container">
+                    <ui:scrollerWrapper class="pageScrollSize ">
+                        <div class="" aura:id="detailCard" style="padding: 5px;">
+                            <div class="recordView slds-card">
+                                <force:recordView recordId="{!v.selectedRecord}" aura:id="viewRecord" />
+                            </div>
+                        </div>
+                    </ui:scrollerWrapper>
+                    <footer class="slds-modal__footer slds-modal__footer_directional">
+                        <button class="slds-button slds-button_neutral modalBtn cancelBtn" id="cancelRecordBtn" onclick="{!c.hideModal}">Close</button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+
+
+        <!-- Crew Modal -->
+        <div aura:id="addCrewBtnModal" class="slds-hide" style="z-index: 1776;">
+            <section role="dialog" tabindex="-1" style="max-height: 60rem; min-height: 60rem;" class="slds-modal slds-fade-in-open slds-modal_large" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close">
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 id="id-of-modalheader-h2" class="slds-text-heading_medium">My Crew</h2>
+                        <p class="slds-m-top_x-small">Crew Time Management</p>
+                    </header>
+                    <ui:scrollerWrapper class="pageScrollSize ">
+
+                        <!-- Can probably reduce the code here with a refactor - change the ID and display different content based on button clicks - definitely low priority -->
+                        <div class="slds-modal__content slds-grid slds-grow" id="modal-content-id-1">
+                            <div class="slds-grid slds-grid_vertical">
+                                <div class="slds-p-vertical_x-small slds-p-horizontal_large slds-shrink-none slds-theme_shade">
+                                    <div class="slds-scrollable slds-grow">
+                                        <table role="grid" class="slds-table slds-table_fixed-layout slds-table_bordered slds-table_resizable-cols slds-no-row-hover slds-scrollable_none">
+                                            <thead>
+                                            <tr class="slds-line-height_reset">
+                                                <!--<th scope="col" style="width: 3.75rem;"></th>-->
+                                                <th aria-label="Name" aria-sort="none" class="slds-is-sortable slds-is-resizable slds-text-title_caps" scope="col">
+                                                    <a class="slds-th__action slds-text-link_reset" href="javascript:void(0);" role="button" tabindex="-1">
+                                                        <span class="slds-assistive-text">Sort by: </span>
+                                                        <span class="slds-truncate" title="Name">Name</span>
+                                                        <div class="slds-icon_container">
+                                                        </div>
+                                                    </a>
+                                                    <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true">Sorted none</span>
+                                                    <div class="slds-resizable">
+                                                        <input type="range" min="20" max="1000" aria-label="Name column width" class="slds-resizable__input slds-assistive-text" id="cell-resize-handle-5" tabindex="-1" />
+                                                        <span class="slds-resizable__handle">
+														<span class="slds-resizable__divider"></span>
+													</span>
+                                                    </div>
+                                                </th>
+                                                <th aria-label="Date" aria-sort="none" class="slds-is-sortable slds-is-resizable slds-text-title_caps" scope="col">
+                                                    <a class="slds-th__action slds-text-link_reset" href="javascript:void(0);" role="button" tabindex="-1">
+                                                        <span class="slds-assistive-text">Sort by: </span>
+                                                        <span class="slds-truncate" title="Date">Date</span>
+                                                        <div class="slds-icon_container">
+
+                                                        </div>
+                                                    </a>
+                                                    <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true">Sorted none</span>
+                                                    <div class="slds-resizable">
+                                                        <input type="range" min="20" max="1000" aria-label="Date column width" class="slds-resizable__input slds-assistive-text" id="cell-resize-handle-5" tabindex="-1" />
+                                                        <span class="slds-resizable__handle">
+														<span class="slds-resizable__divider"></span>
+													</span>
+                                                    </div>
+                                                </th>
+                                            </tr>
+                                            </thead>
+
+                                            <tbody>
+                                            <aura:iteration items="{!v.crewMem}" var="mem">
+                                                <tr class="slds-hint-parent">
+                                                    <th scope="row">
+                                                        <div class="slds-truncate" aura:id="{!mem.Id}" title="{!mem.Name}">{!mem.Name}</div>
+                                                    </th>
+                                                    <td role="gridcell">
+                                                        <div class="slds-truncate" title="">
+                                                            <ui:outputDate value="{!v.today}" format="MM/dd/yyyy"/>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <div class="durationSlider" style="padding-bottom: 7px;">
+                                                    <lightning:slider aura:id="{!'slider_' + mem.Id}" title="{!'slider_' + mem.Id}" label="Minutes" type="range" min="0" max="600" value="0" step="15" onchange="{!c.itemsChange}" />
+                                                </div>
+                                            </aura:iteration>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </ui:scrollerWrapper>
+                    <footer class="slds-modal__footer slds-modal__footer_directional">
+                        <button class="slds-button slds-button_neutral modalBtn cancelBtn" id="cancelCrewBtn" onclick="{!c.hideModal}">Cancel</button>
+
+                        <div class="slds-button-group" role="group">
+                            <ui:button class="slds-button slds-button_neutral modalBtn saveWorkBtn" aura:id="saveCrewBtn" label="Submit Entries" press="{!c.saveWorkAssignments}"></ui:button>
+                        </div>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+
+        <!-- equipment/asset add modal -->
+        <div aura:id="addEquipBtnModal" class="slds-hide" style="z-index: 1776;">
+            <section role="dialog" tabindex="-1" style="max-height: 60rem; min-height: 60rem;" class="slds-modal slds-fade-in-open slds-modal_large" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close">
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 id="id-of-modalheader-h2" class="slds-text-heading_medium">Equipment</h2>
+                        <p class="slds-m-top_x-small">Equipment Time Management</p>
+                    </header>
+                    <ui:scrollerWrapper class="pageScrollSize ">
+                        <div class="slds-modal__content slds-grid slds-grow" id="modal-content-id-1">
+                            <div class="slds-grid slds-grid_vertical">
+                                <div class="slds-p-vertical_x-small slds-p-horizontal_large slds-shrink-none slds-theme_shade">
+                                    <div class="slds-scrollable slds-grow">
+                                        <table role="grid" class="slds-table slds-table_fixed-layout slds-table_bordered slds-table_resizable-cols slds-no-row-hover slds-scrollable_none">
+                                            <thead>
+                                            <tr class="slds-line-height_reset">
+                                                <!--<th scope="col" style="width: 3.75rem;"></th>-->
+                                                <th aria-label="Number" aria-sort="none" class="slds-is-sortable slds-is-resizable slds-text-title_caps" scope="col">
+                                                    <a class="slds-th__action slds-text-link_reset" href="javascript:void(0);" role="button" tabindex="-1">
+                                                        <span class="slds-assistive-text">Sort by: </span>
+                                                        <span class="slds-truncate" title="Number">Number</span>
+                                                        <div class="slds-icon_container">
+                                                        </div>
+                                                    </a>
+                                                    <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true">Sorted none</span>
+                                                    <div class="slds-resizable">
+                                                        <input type="range" min="20" max="1000" aria-label="Name column width" class="slds-resizable__input slds-assistive-text" id="cell-resize-handle-5" tabindex="-1" />
+                                                        <span class="slds-resizable__handle">
+														<span class="slds-resizable__divider"></span>
+													</span>
+                                                    </div>
+                                                </th>
+                                                <th>
+                                                    <span class="slds-truncate" title="Minutes">Minutes</span>
+                                                </th>
+
+                                            </tr>
+                                            </thead>
+
+                                            <tbody aura:id="equipTable" >
+													{!v.equipmentTable}
+                                            </tbody>
+
+                                            <div class="slds-form-element slds-checkbox_add-button" style="padding: 10px;" aura:id="thankYouBtn">
+                                                <div class="slds-form-element__control">
+                                                    <input type="button" onclick="{!c.addModalRow}" class="slds-assistive-text" id="addRowBtn" value="on" />
+                                                    <label for="addRowBtn" class="slds-checkbox_faux">
+                                                        <span class="slds-assistive-text"></span>
+                                                    </label>Thank you sir, may I please have another?
+                                                </div>
+                                            </div>
+
+
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </ui:scrollerWrapper>
+                    <footer class="slds-modal__footer slds-modal__footer_directional">
+                        <button class="slds-button slds-button_neutral modalBtn cancelBtn" id="cancelEquipBtn" onclick="{!c.hideModal}">Cancel</button>
+
+                        <div class="slds-button-group" role="group">
+                            <ui:button class="slds-button slds-button_neutral modalBtn saveWorkBtn" aura:id="saveEquipBtn" label="Submit Entries" press="{!c.saveWorkAssignments}"></ui:button>
+                        </div>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+
+
+
+        <!-- territory resource modal -->
+        <div aura:id="addTerBtnModal" class="slds-hide" style="z-index: 1776;">
+            <section role="dialog" tabindex="-1" style="max-height: 60rem; min-height: 60rem;" class="slds-modal slds-fade-in-open slds-modal_large" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <h2 id="id-of-modalheader-h2" class="slds-text-heading_medium">My Territories</h2>
+                        <p class="slds-m-top_x-small">Territory Time Management</p>
+                        <div class="slds-modal__content" style="padding: 10px;" aura:id="territorySearch" onchange="{!c.territoryMemSearch}">
+                            <ui:inputText aura:id="memSearch" label="Search Resources:" placeholder="Search Name"/>
+                        </div>
+                    </header>
+
+                    <ui:scrollerWrapper class="pageScrollSize ">
+                        <div class="slds-modal__content slds-grid slds-grow" id="modal-content-id-1">
+                            <div class="slds-grid slds-grid_vertical">
+                                <div class="slds-p-vertical_x-small slds-p-horizontal_large slds-shrink-none slds-theme_shade">
+                                    <div class="slds-scrollable slds-grow">
+                                        <table role="grid" class="slds-table slds-table_fixed-layout slds-table_bordered slds-table_resizable-cols slds-no-row-hover slds-scrollable_none">
+                                            <thead>
+                                            <tr class="slds-line-height_reset">
+                                                <!--<th scope="col" style="width: 3.75rem;"></th>-->
+                                                <th aria-label="Name" aria-sort="none" class="slds-is-sortable slds-is-resizable slds-text-title_caps" scope="col">
+                                                    <a class="slds-th__action slds-text-link_reset" href="javascript:void(0);" role="button" tabindex="-1">
+                                                        <span class="slds-assistive-text">Sort by: </span>
+                                                        <span class="slds-truncate" title="Name">Name</span>
+                                                        <div class="slds-icon_container">
+
+                                                        </div>
+                                                    </a>
+                                                    <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true">Sorted none</span>
+                                                    <div class="slds-resizable">
+                                                        <input type="range" min="20" max="1000" aria-label="Name column width" class="slds-resizable__input slds-assistive-text" id="cell-resize-handle-5" tabindex="-1" />
+                                                        <span class="slds-resizable__handle">
+														<span class="slds-resizable__divider"></span>
+													</span>
+                                                    </div>
+                                                </th>
+                                                <th aria-label="Date" aria-sort="none" class="slds-is-sortable slds-is-resizable slds-text-title_caps" scope="col">
+                                                    <a class="slds-th__action slds-text-link_reset" href="javascript:void(0);" role="button" tabindex="-1">
+                                                        <span class="slds-assistive-text">Sort by: </span>
+                                                        <span class="slds-truncate" title="Date">Date</span>
+                                                        <div class="slds-icon_container">
+
+                                                        </div>
+                                                    </a>
+                                                    <span class="slds-assistive-text" aria-live="assertive" aria-atomic="true">Sorted none</span>
+                                                    <div class="slds-resizable">
+                                                        <input type="range" min="20" max="1000" aria-label="Date column width" class="slds-resizable__input slds-assistive-text" id="cell-resize-handle-5" tabindex="-1" />
+                                                        <span class="slds-resizable__handle">
+														<span class="slds-resizable__divider"></span>
+													</span>
+                                                    </div>
+                                                </th>
+                                            </tr>
+                                            </thead>
+
+
+
+
+
+
+                                            <aura:if isTrue="{!v.memFiltered}">
+                                                <tbody>
+                                                <aura:iteration items="{!v.filteredTerMem}" var="ftm">
+                                                    <tr class="slds-hint-parent">
+                                                        <th scope="row">
+                                                            <div class="slds-truncate" aura:id="{!ftm.Id}" title="{!ftm.Name}">{!ftm.Name}</div>
+                                                        </th>
+                                                        <td role="gridcell">
+                                                            <div class="slds-truncate" title="">
+                                                                <ui:outputDate value="{!v.today}" format="MM/dd/yyy"/>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    <div class="durationSlider" style="padding-bottom: 7px;">
+                                                        <lightning:slider aura:id="{!'slider_' + ftm.Id}" title="{!'slider_' + ftm.Id}" label="Minutes" type="range" min="0" max="600" value="0" step="15" onchange="{!c.itemsChange}" />
+                                                    </div>
+                                                </aura:iteration>
+                                                </tbody>
+                                                <aura:set attribute="else">
+                                                    <tbody>
+                                                    <aura:iteration items="{!v.terMem}" var="mem">
+                                                        <tr class="slds-hint-parent">
+                                                            <th scope="row">
+                                                                <div class="slds-truncate" aura:id="{!mem.Id}" title="{!mem.Name}">{!mem.Name}</div>
+                                                            </th>
+                                                            <td role="gridcell">
+                                                                <div class="slds-truncate" title="">
+                                                                    <ui:outputDate value="{!v.today}" format="MM/dd/yyy"/>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <div class="durationSlider" style="padding-bottom: 7px;">
+                                                            <lightning:slider aura:id="{!'slider_' + mem.Id}" title="{!'slider_' + mem.Id}" label="Minutes" type="range" min="0" max="600" value="0" step="15" onchange="{!c.itemsChange}" />
+                                                        </div>
+                                                    </aura:iteration>
+                                                    </tbody>
+                                                </aura:set>
+                                            </aura:if>
+
+
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </ui:scrollerWrapper>
+                    <footer class="slds-modal__footer slds-modal__footer_directional">
+                        <button class="slds-button slds-button_neutral modalBtn cancelBtn" id="cancelTerBtn" onclick="{!c.hideModal}">Cancel</button>
+
+                        <div class="slds-button-group" role="group">
+                            <ui:button class="slds-button slds-button_neutral modalBtn saveWorkBtn" aura:id="saveTerBtn" label="Submit Entries" press="{!c.saveWorkAssignments}"></ui:button>
+                        </div>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+
+        <!-- purchases and products modal -->
+        <div aura:id="addProdBtnModal" class="slds-hide" style="z-index: 1776;">
+            <section role="dialog" tabindex="-1" style="max-height: 60rem; min-height: 60rem;" class="slds-modal slds-fade-in-open slds-modal_large" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
+
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <div class="slds-tabs_default">
+                            <ui:button class="slds-tabs_default__item addProdTab" aura:id="addProd" press="{!c.modalTabSelect}">Products</ui:button>
+                            <ui:button class="slds-tabs_default__item addPurchTab" aura:id="addPurch" press="{!c.modalTabSelect}">Purchases</ui:button>
+                        </div>
+                    </header>
+                    <ui:scrollerWrapper class="pageScrollSize ">
+                        <div class="slds-modal__content slds-grid slds-grow">
+
+                            <div aura:id="productTab">
+                                <h3 class="slds-text-heading_medium">Add Product</h3>
+
+                                <div class="slds-form-element slds-checkbox_add-button" style="padding: 10px;" aura:id="addPCCard">
+                                    <div class="slds-form-element__control">
+                                        <div aura:id="pSearch" > Find Product: <ui:inputText class="slds-truncate" change="{!c.searchProducts}"></ui:inputText></div>
+                                        <br /><p>Use this feature to add additional Town provided products you are not using your P-Card for.</p><br />
+                                        <!--<input type="button" onclick="{!c.addPPRow}" class="slds-assistive-text" id="prodBtn" value="on" />
+										<label for="prodBtn" class="slds-checkbox_faux">
+											<span class="slds-assistive-text"></span>
+										</label>More Products-->
+                                    </div>
+
+
+
+
+                                    <div class="slds-hide" aura:id="prodForm" >
+                                        <p>{!v.prodTable}</p>
+                                        <!--	<div aura:id="prodQuantInput" >Selected Product: <ui:outputText class="slds-truncate" value="{!v.prodName}"/></div>
+										<div aura:id="prodQuantInput" >Quantity: <ui:inputNumber class="slds-truncate" /></div>-->
+                                    </div>
+
+
+                                </div>
+                                <div aura:id="existingProducts" class="slds-grid slds-wrap">
+                                    <aura:iteration items="{!v.existingProductList}" var="prod">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <div class="slds-box slds-box_x-small slds-m-around_x-small slds-grow" style="height: 26rem; min-width: 18rem; max-width: 18rem; min-height: 20rem; max-height: 20rem; background: rgb(74, 173, 189); padding: 1rem;">
+                                                <div class="slds-panel slds-grid slds-nowrap">
+                                                    <div class="slds-form slds-form_stacked slds-grow slds-scrollable_y">
+                                                        <div class="slds-panel__section slds-border_bottom">
+                                                            <div class="slds-media">
+                                                                <div class="slds-media__figure slds-col-padded slds-size_1-of-1">
+                                                                    <h2 style="padding-left: 0.5rem; padding-top: 0.5rem" class="slds-text-heading_small slds-m-bottom_medium slds-truncate_container_75"><strong>{!prod.Product2.Name}</strong></h2>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <ul class="slds-wrap" style="padding-left: 0.5rem; padding-right: 0.5rem;">
+                                                            <li class="slds-form-element slds-hint-parent slds-border_bottom">
+                                                                <span class="slds-form-element__label">Quantity</span>
+                                                                <p style="padding-left: 0.25rem; padding-right: 0.25rem;"><strong>{!prod.QuantityConsumed}</strong></p>
+                                                            </li>
+
+                                                            <li class="slds-form-element slds-hint-parent slds-border_bottom">
+                                                                <span class="slds-form-element__label">Price Per Product</span>
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static slds-truncate">${!prod.UnitPrice}</span>
+                                                                </div>
+                                                            </li>
+
+                                                            <li class="slds-form-element slds-hint-parent slds-border_bottom">
+                                                                <span class="slds-form-element__label">Cost On WO</span>
+                                                                <div class="slds-form-element__control">
+                                                                    <span class="slds-form-element__static slds-truncate">${!prod.Total_Cost__c}</span>
+                                                                </div>
+                                                            </li>
+
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </aura:iteration>
+
+                                </div>
+
+                            </div>
+                            <div class="slds-hide" aura:id="purchaseTab">
+                                <h3 class="slds-text-heading_medium">Add Purchase</h3>
+                                <div class="slds-form-element slds-checkbox_add-button" style="padding: 10px;" aura:id="addPurchCard">
+                                    <div class="slds-form-element__control">
+                                        <input type="button" onclick="{!c.addPPRow}" class="slds-assistive-text" id="purchBtn" value="on" />
+                                        <label for="purchBtn" class="slds-checkbox_faux">
+                                            <span class="slds-assistive-text"></span>
+                                        </label>More Purchases
+                                    </div>
+                                    <br /><p>Use this feature to add additional items you have had to purchase with your P-card.</p><br />
+                                </div>
+                                <div aura:id="existingPurchases">
+                                    <div aura:id="existingPurchs" class="slds-grid slds-wrap">
+                                        <aura:iteration items="{!v.existingPurchaseList}" var="purch">
+                                            <div class="slds-col">
+                                                <div class="slds-box slds-box_x-small slds-m-around_x-small" style="height: 26rem; min-width: 18rem; max-width: 18rem; min-height: 20rem; max-height: 20rem; background: rgb(157, 190, 160); padding: 1rem;">
+                                                    <div class="slds-panel slds-grid slds-nowrap">
+                                                        <div class="slds-form slds-form_stacked slds-grow slds-scrollable_y">
+                                                            <div class="slds-panel__section slds-border_bottom">
+                                                                <div class="slds-media">
+                                                                    <div class="slds-media__figure">
+                                                                        <h2 style="padding-left: 0.5rem; padding-top: 0.5rem" class="slds-text-heading_small slds-m-bottom_medium slds-truncate_container_66"><strong>{!purch.Item_Description__c}</strong></h2>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <ul class="slds-wrap" style="padding-left: 0.5rem; padding-right: 0.5rem;">
+                                                                <li class="slds-form-element slds-hint-parent slds-border_bottom">
+                                                                    <span class="slds-form-element__label">Quantity</span>
+                                                                    <p style="padding-left: 0.25rem; padding-right: 0.25rem;"><strong>{!purch.Quantity__c}</strong></p>
+                                                                </li>
+
+                                                                <li class="slds-form-element slds-hint-parent slds-border_bottom">
+                                                                    <span class="slds-form-element__label">Price Per PrPurchase</span>
+                                                                    <div class="slds-form-element__control">
+                                                                        <span class="slds-form-element__static slds-truncate">${!purch.Cost__c}</span>
+                                                                    </div>
+                                                                </li>
+
+                                                                <li class="slds-form-element slds-hint-parent slds-border_bottom">
+                                                                    <span class="slds-form-element__label">Cost On WO</span>
+                                                                    <div class="slds-form-element__control">
+                                                                        <span class="slds-form-element__static slds-truncate">${!purch.Total_Cost__c}</span>
+                                                                    </div>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </aura:iteration>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </ui:scrollerWrapper>
+                    <footer class="slds-modal__footer slds-modal__footer_directional">
+                        <button class="slds-button slds-button_neutral modalBtn cancelBtn" id="cancelProdBtn" onclick="{!c.hideModal}">Cancel</button>
+
+                        <div class="slds-button-group" role="group">
+                            <ui:button class="slds-button slds-button_neutral modalBtn refProdPurchBtn" aura:id="refProdPurch" label="Refresh Entries" press="{!c.refreshProdPurch}"></ui:button>
+                            <ui:button class="slds-button slds-button_neutral modalBtn savePRCBtn" aura:id="savePCBtn" label="Submit Entries" press="{!c.savePC}"></ui:button>
+                        </div>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+
+
+
+    </aura:set>
+</aura:component>

@@ -1,0 +1,138 @@
+.THIS .addBtn {
+    color: black;
+    font-weight: bold;
+    font-size: 18px;
+    min-height: 4rem;
+    border-style: groove;
+    padding: 5px;
+}
+
+.THIS .saStatusBtn {
+    min-height: 3rem;
+    color: black;
+    font-weight: bold;
+    font-size: 18px;
+    border-style: groove;
+
+}
+
+.THIS .showEntrBtn {
+    background-color: #d5e7e8;
+}
+
+.THIS .showEqBtn {
+    background-color: #d5e7e8;
+}
+
+.THIS .editSABtn {
+    background-color: #d5e7e8;
+    border-style: groove;
+    color: black;
+}
+.THIS .modalBtn {
+    min-width: 7rem;
+    color: black;
+    min-height: 3rem;
+}
+
+.THIS .addPurchTab {
+    color: rgb(94, 142, 99);
+}
+.THIS .addProdTab {
+    color: rgb(52, 128, 141);
+}
+
+.THIS .recordBtn {
+    background-color: #916e95;
+    color: white;
+    border-style: groove;
+    min-width: 100%;
+    font-weight: bold;
+}
+.THIS .saveWorkBtn {
+    background-color: #ff7866;
+}
+
+.THIS .savePRCBtn{
+    background-color: #ff7866;
+}
+
+.THIS .refProdPurchBtn{
+    background-color: #ff7866;
+}
+
+.THIS .inProgBtn {
+    background-color: #4aadbd;
+}
+.THIS .completeBtn {
+    background-color: #9dbea0;
+}
+.THIS .onHoldBtn {
+    background-color: #ffc875;
+}
+
+.THIS .cancelBtn {
+    background-color: #4aadbd;
+}
+.THIS .addEquipBtn{
+    background-color: #ff7866;
+
+}
+.THIS .addTerBtn{
+    background-color: #4aadbd;
+}
+.THIS .addCrewBtn {
+    background-color: #ff9e65;
+}
+.THIS .addProdBtn {
+    background-color: #ffc875;
+}
+.THIS .durationSlider {
+    min-width: 40rem;
+    padding-left: 5px;
+}
+
+.THIS .btnUl {
+    min-width: 384px;
+}
+
+
+.THIS .slds-table-bordered {
+    background-color: #f4efe1;
+}
+
+.THIS .slds-slider__range {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 12px;
+    border-radius: 5px;
+    background: #d3d3d3;
+    outline: none;
+    opacity: 0.7;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+}
+
+.THIS .slds-slider__range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #4CAF50;
+    cursor: pointer;
+}
+
+.THIS .slds-slider__range::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #4CAF50;
+    cursor: pointer;
+}
+
+.THIS .faded {
+
+    background-color: gray;
+    opacity: .8;
+}
