@@ -1,14 +1,17 @@
 <aura:component controller="RoWManagementController" implements="flexipage:availableForAllPageTypes" access="global">
+
+    <ltng:require scripts="{!$Resource.base_toc__moment}"
+				  afterScriptsLoaded="{!c.afterJSLoaded}"
+    />
+
     <aura:attribute name="assignedAppointments" type="List" />
     <aura:attribute name="filteredAppointments" type="List" />
     <aura:attribute name="saId" type="String" />
     <aura:attribute name="existingSAResources" type="Map" />
-    <aura:attribute name="wo" type="List" default="" />
-    <aura:attribute name="sa" type="List" default="" />
+    <aura:attribute name="workWrapperList" type="List" default="" />
+    <aura:attribute name="saList" type="List" default="" />
     <aura:attribute name="existingPurchaseList" type="List" default="" />
     <aura:attribute name="existingProductList" type="List" default="" />
-    <aura:attribute name="woli" type="List" default="" />
-    <aura:attribute name="woliId" type="String" default="" />
     <aura:attribute name="renderWO" type="Boolean" default="false" />
     <aura:attribute name="crewMem" type="List" default="" />
     <aura:attribute name="terMem" type="List" default="" />
@@ -190,7 +193,7 @@
                 <ui:button class="slds-button slds-button_neutral saStatusBtn slds-size_1-of-3 completeBtn" aura:id="complete" press="{!c.statusUpdate}">Complete</ui:button>
             </div>
             <article aura:id="" class="slds-card" >
-                <aura:iteration var="woData" items="{!v.wo}" indexVar="w">
+                <aura:iteration var="woData" items="{!v.workWrapperList}" indexVar="w">
                     <table class="slds-table slds-table_bordered slds-table_cell-buffer">
                         <thead class="recordDetail">
                         <tr class="slds-text-title_caps">
@@ -217,33 +220,16 @@
                                 <div class="slds-truncate" title="Work Order">Work Order</div>
                             </th>
                             <th scope="row" data-label="Status">
-                                <div class="slds-truncate" title="{!woData.saWOLI.WorkOrder.Status}">{!woData.saWOLI.WorkOrder.Status}</div>
+                                <div class="slds-truncate" title="{!woData.saWorkOrder.Status}">{!woData.saWorkOrder.Status}</div>
                             </th>
                             <th scope="row" data-label="Reference">
-                                <div class="slds-truncate" name="{!woData.saWOLI.WorkOrderId}" title="{!woData.saWOLI.WorkOrder.WorkOrderNumber}"><lightning:button aura:id="workOrderId" name="{!woData.saWOLI.WorkOrderId}" class="recordBtn" onclick="{!c.recordPreview}">{!woData.saWOLI.WorkOrder.WorkOrderNumber}</lightning:button></div>
+                                <div class="slds-truncate" name="{!woData.saWorkOrder.Id}" title="{!woData.saWorkOrder.WorkOrderNumber}"><lightning:button aura:id="workOrderId" name="{!woData.saWorkOrder.Id}" class="recordBtn" onclick="{!c.recordPreview}">{!woData.saWorkOrder.WorkOrderNumber}</lightning:button></div>
                             </th>
                             <th scope="row" data-label="Date">
-                                <div class="slds-truncate" title="{!woData.saWOLI.WorkOrder.Due_Date__c}"><ui:outputDate value="{!woData.saWOLI.WorkOrder.Due_Date__c}" /></div>
+                                <div class="slds-truncate" title="{!woData.saWorkOrder.pwut_toc__Due_Date__c}"><ui:outputDate value="{!woData.saWorkOrder.pwut_toc__Due_Date__c}" /></div>
                             </th>
                             <th scope="row" data-label="Task">
-                                <div class="slds-truncate" title="{!woData.saWOLI.WorkOrder.Subject}">{!woData.saWOLI.WorkOrder.Subject}</div>
-                            </th>
-                        </tr>
-                        <tr>
-                            <th scope="row" data-label="Type">
-                                <div class="slds-truncate" title="WOLI">WOLI</div>
-                            </th>
-                            <th scope="row" data-label="Status">
-                                <div class="slds-truncate" title="{!woData.saWOLI.Status}">{!woData.saWOLI.Status}</div>
-                            </th>
-                            <th scope="row" data-label="Reference">
-                                <div class="slds-truncate" name="{!woData.saWOLI.Id}" title="{!woData.saWOLI.LineItemNumber}"><lightning:button name="{!woData.saWOLI.Id}" class="recordBtn" onclick="{!c.recordPreview}">{!woData.saWOLI.LineItemNumber}</lightning:button></div>
-                            </th>
-                            <th scope="row" data-label="Date">
-                                <div class="slds-truncate" title="{!woData.saWOLI.Due_Date__c}"><ui:outputDate value="{!woData.saWOLI.Due_Date__c}" /></div>
-                            </th>
-                            <th scope="row" data-label="Task">
-                                <div class="slds-truncate" title="{!woData.saWOLI.Subject}">{!woData.saWOLI.Subject}</div>
+                                <div class="slds-truncate" title="{!woData.saWorkOrder.Subject}">{!woData.saWorkOrder.Subject}</div>
                             </th>
                         </tr>
                         <tr>
@@ -251,16 +237,16 @@
                                 <div class="slds-truncate" title="SA">SA</div>
                             </th>
                             <th scope="row" data-label="Status">
-                                <div class="slds-truncate" title="{!woData.sa.Status}">{!woData.sa.Status}</div>
+                                <div class="slds-truncate" title="{!woData.serviceAppointment.Status}">{!woData.serviceAppointment.Status}</div>
                             </th>
                             <th scope="row" data-label="Reference">
-                                <div class="slds-truncate" name="{!woData.sa.Id}" title="{!woData.sa.AppointmentNumber}"><lightning:button name="{!woData.sa.Id}" class="recordBtn" onclick="{!c.recordPreview}">{!woData.sa.AppointmentNumber}</lightning:button></div>
+                                <div class="slds-truncate" name="{!woData.serviceAppointment.Id}" title="{!woData.serviceAppointment.AppointmentNumber}"><lightning:button name="{!woData.serviceAppointment.Id}" class="recordBtn" onclick="{!c.recordPreview}">{!woData.serviceAppointment.AppointmentNumber}</lightning:button></div>
                             </th>
                             <th scope="row" data-label="Date">
-                                <div class="slds-truncate" title="{!woData.sa.SchedStartTime}"><ui:outputDate value="{!woData.sa.SchedStartTime}" /></div>
+                                <div class="slds-truncate" title="{!woData.serviceAppointment.SchedStartTime}"><ui:outputDate value="{!woData.serviceAppointment.SchedStartTime}" /></div>
                             </th>
                             <th scope="row" data-label="Task">
-                                <div class="slds-truncate" title="{!woData.sa.Subject}">{!woData.sa.Subject}</div>
+                                <div class="slds-truncate" title="{!woData.serviceAppointment.Subject}">{!woData.serviceAppointment.Subject}</div>
                             </th>
                         </tr>
                         </tbody>
@@ -347,7 +333,7 @@
                             <div class="slds-grid slds-grid_vertical">
                                 <div class="slds-p-vertical_x-small slds-p-horizontal_small slds-shrink-none">
                                     <div class="slds-scrollable slds-grow">
-                                        <img class="" style="z-index: 1987;" src="{!$Resource.PubWorks_Loader}" />
+                                        <img class="" style="z-index: 1987;" src="{!$Resource.base_toc__PubWorks_Loader}" />
                                     </div>
                                 </div>
                             </div>
@@ -447,7 +433,7 @@
                                                     </td>
                                                 </tr>
                                                 <div class="durationSlider" style="padding-bottom: 7px;">
-                                                    <lightning:slider aura:id="{!'slider_' + mem.Id}" title="{!'slider_' + mem.Id}" label="Minutes" type="range" min="0" max="600" value="0" step="15" onchange="{!c.itemsChange}" />
+                                                    <lightning:slider aura:id="{!'slider_' + mem.Id}" title="{!'slider_' + mem.Id}" label="Minutes" type="range" min="0" max="720" value="0" step="15" onchange="{!c.itemsChange}" />
                                                 </div>
                                             </aura:iteration>
                                             </tbody>
@@ -620,7 +606,7 @@
                                                         </td>
                                                     </tr>
                                                     <div class="durationSlider" style="padding-bottom: 7px;">
-                                                        <lightning:slider aura:id="{!'slider_' + ftm.Id}" title="{!'slider_' + ftm.Id}" label="Minutes" type="range" min="0" max="600" value="0" step="15" onchange="{!c.itemsChange}" />
+                                                        <lightning:slider aura:id="{!'slider_' + ftm.Id}" title="{!'slider_' + ftm.Id}" label="Minutes" type="range" min="0" max="720" value="0" step="15" onchange="{!c.itemsChange}" />
                                                     </div>
                                                 </aura:iteration>
                                                 </tbody>
@@ -638,7 +624,7 @@
                                                             </td>
                                                         </tr>
                                                         <div class="durationSlider" style="padding-bottom: 7px;">
-                                                            <lightning:slider aura:id="{!'slider_' + mem.Id}" title="{!'slider_' + mem.Id}" label="Minutes" type="range" min="0" max="600" value="0" step="15" onchange="{!c.itemsChange}" />
+                                                            <lightning:slider aura:id="{!'slider_' + mem.Id}" title="{!'slider_' + mem.Id}" label="Minutes" type="range" min="0" max="720" value="0" step="15" onchange="{!c.itemsChange}" />
                                                         </div>
                                                     </aura:iteration>
                                                     </tbody>
@@ -732,7 +718,7 @@
                                                             <li class="slds-form-element slds-hint-parent slds-border_bottom">
                                                                 <span class="slds-form-element__label">Cost On WO</span>
                                                                 <div class="slds-form-element__control">
-                                                                    <span class="slds-form-element__static slds-truncate">${!prod.Total_Cost__c}</span>
+                                                                    <span class="slds-form-element__static slds-truncate">${!prod.pwut_toc__Total_Cost__c}</span>
                                                                 </div>
                                                             </li>
 
@@ -767,7 +753,7 @@
                                                             <div class="slds-panel__section slds-border_bottom">
                                                                 <div class="slds-media">
                                                                     <div class="slds-media__figure">
-                                                                        <h2 style="padding-left: 0.5rem; padding-top: 0.5rem" class="slds-text-heading_small slds-m-bottom_medium slds-truncate_container_66"><strong>{!purch.Item_Description__c}</strong></h2>
+                                                                        <h2 style="padding-left: 0.5rem; padding-top: 0.5rem" class="slds-text-heading_small slds-m-bottom_medium slds-truncate_container_66"><strong>{!purch.pwut__Item_Description__c}</strong></h2>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -775,20 +761,20 @@
                                                             <ul class="slds-wrap" style="padding-left: 0.5rem; padding-right: 0.5rem;">
                                                                 <li class="slds-form-element slds-hint-parent slds-border_bottom">
                                                                     <span class="slds-form-element__label">Quantity</span>
-                                                                    <p style="padding-left: 0.25rem; padding-right: 0.25rem;"><strong>{!purch.Quantity__c}</strong></p>
+                                                                    <p style="padding-left: 0.25rem; padding-right: 0.25rem;"><strong>{!purch.pwut__Quantity__c}</strong></p>
                                                                 </li>
 
                                                                 <li class="slds-form-element slds-hint-parent slds-border_bottom">
                                                                     <span class="slds-form-element__label">Price Per PrPurchase</span>
                                                                     <div class="slds-form-element__control">
-                                                                        <span class="slds-form-element__static slds-truncate">${!purch.Cost__c}</span>
+                                                                        <span class="slds-form-element__static slds-truncate">${!purch.pwut__Cost__c}</span>
                                                                     </div>
                                                                 </li>
 
                                                                 <li class="slds-form-element slds-hint-parent slds-border_bottom">
                                                                     <span class="slds-form-element__label">Cost On WO</span>
                                                                     <div class="slds-form-element__control">
-                                                                        <span class="slds-form-element__static slds-truncate">${!purch.Total_Cost__c}</span>
+                                                                        <span class="slds-form-element__static slds-truncate">${!purch.pwut__Total_Cost__c}</span>
                                                                     </div>
                                                                 </li>
                                                             </ul>

@@ -8,27 +8,23 @@
 
 		Proactively gets the current user's crew and territory members
 	*/
-	doInit: function(component, event, helper) {
+	doInit : function(component, event, helper) {
         console.log('initializing helper functions...');
-		var today = new Date();
-		var monthDigit = today.getMonth() + 1;
-		if (monthDigit <= 9) {
-			monthDigit = '0' + monthDigit;
-		}
-
-		component.set('v.today', today.getFullYear() + "-" + monthDigit + "-" + today.getDate());
 		helper.canAssign(component);
 	},
 
-	showSpinner: function (component, event, helper) {
+	afterJSLoaded : function(component, event, helper) {
+		var today = moment().format('YYYY-MM-DD');
+		component.set('v.today', today);
+	},
+
+	showSpinner : function (component, event, helper) {
         component.set("v.showSpinnerImage", true);
 		$A.util.removeClass(component.find('loaderModal'), "slds-hide");
 		$A.util.removeClass(component.find("loadModal"), "slds-hide");
-		//component.find('canAssign').fadeTo('fast', .2);
-		//$A.util.addClass(component.get("v.body"), "faded");
     },
 
-    hideSpinner: function (component, event, helper) {
+    hideSpinner : function (component, event, helper) {
         component.set("v.showSpinnerImage", false);
 		$A.util.addClass(component.find('loaderModal'), "slds-hide");
 		$A.util.addClass(component.find("loadModal"), "slds-hide");
@@ -37,24 +33,11 @@
 	/*
 		Searches the service appointment list for day number or subject
 	*/
-	updateSelect: function(component, event, helper) {
-		console.log(component.find("searchTerm").get("v.value"));
-		var st = component.find("searchTerm").get("v.value").toUpperCase();
+	updateSelect : function(component, event, helper) {
+		var searchTerm = component.find("searchTerm").get("v.value").toUpperCase();
 		var appts = component.get("v.assignedAppointments");
-		var filteredAppts = [];
-		appts.forEach(function(a) {
-
-			var subj = a.ServiceAppointment.Subject.toUpperCase();
-			var due = a.ServiceAppointment.SchedStartTime;
-
-			if(a.ServiceAppointment.Street != undefined && a.ServiceAppointment.Street.toUpperCase().includes(st)) {
-
-				filteredAppts.push(a);
-
-			} else if(subj.includes(st) || due.includes(st)) {
-				filteredAppts.push(a);
-			}
-		});
+		var filteredAppts = appts.filter( a => (a.ServiceAppointment.Street != undefined && a.ServiceAppointment.Street.toUpperCase().includes(searchTerm)) ||
+				a.ServiceAppointment.Subject.toUpperCase().includes(searchTerm) || a.ServiceAppointment.SchedStartTime.includes(searchTerm));
 		component.set('v.filteredAppointments', filteredAppts);
 		if(filteredAppts != []) {
 			$A.util.toggleClass(component.find("availableAppointments"), "slds-hide");
@@ -62,25 +45,17 @@
 		}
 	},
 
-	showAppts: function(component, event, helper) {
+	showAppts : function(component, event, helper) {
 		$A.util.toggleClass(component.find("canAssign"), "slds-hide");
 		$A.util.toggleClass(component.find("woScreen"), "slds-hide");
 	},
 
-	territoryMemSearch: function(component, event, helper) {
+	territoryMemSearch : function(component, event, helper) {
+		var searchTerm = component.find("memSearch").get("v.value").toUpperCase();
+		var territoryMembers = component.get("v.terMem");
 
-		var st = component.find("memSearch").get("v.value").toUpperCase();
-		var terMem = component.get("v.terMem");
-		console.log(st);
+		var memSearch = territoryMembers.filter(tm =>  tm.Name.toUpperCase().includes(searchTerm));
 
-		var memSearch = [];
-
-		terMem.forEach(function(tm) {
-			name = tm.Name.toUpperCase();
-			if(name.includes(st)) {
-				memSearch.push(tm);
-			}
-		});
 		component.set("v.memFiltered", true);
 		component.set("v.filteredTerMem", memSearch);
 	},
@@ -89,36 +64,15 @@
 		Builds a dynamic list of available statuses to change to
 		ServiceAppointment.Status.getDescribe().getPicklistValues()
 	*/
-	statusUpdate: function(component, event, helper) {
-		var action = component.get("c.availableStatuses");
-		var saId = component.get("v.saId");
+	statusUpdate : function(component, event, helper) {
 		var status = event.getSource().getLocalId();
-		console.log('hi mom');
-		action.setParams({
-			"saId": saId,
-			"status": status
-		});
-
-		action.setCallback(this, function(response) {
-			var name = response.getState();
-			if(name == "SUCCESS") {
-				console.log('status:');
-				console.log(response.getReturnValue());
-				$A.util.removeClass(component.find('statusAlert'), 'slds-hide');
-			}
-		});
-		$A.enqueueAction(action);
-		window.setTimeout(
-			$A.getCallback(function() {
-				$A.util.addClass(component.find('statusAlert'), 'slds-hide');
-			}), 5000
-		);
+		helper.statusUpdate(component, status);
 	},
 
 	/*
 		Whichever SA the user taps, overwrites aura variable saId for consumption later.
 	*/
-	editAppointment: function(component, event, helper) {
+	editAppointment : function(component, event, helper) {
 
 		var idx = event.target.id;
 		component.set('v.saId', idx);
@@ -131,10 +85,10 @@
 	/*
 		Future use function to do something on selecting a tree item
 	*/
-	onTreeItemSelected: function(component, event, helper) {
+	onTreeItemSelected : function(component, event, helper) {
 		console.log(event.getParam("name"));
 		var recordId = event.getParam("name");
-		if(recordId) {
+		if (recordId) {
 			component.set("v.selectedRecord", recordId);
 			console.log('hey ma: ' + recordId);
 		}
@@ -143,19 +97,18 @@
 	/*
 		Displays which modal
 	*/
-	addButton: function(component, event, helper) {
+	addButton : function(component, event, helper) {
 		var sa = component.get("v.saId");
 		var status = event.getSource().getLocalId();
 		var name = status + "Modal";
 		$A.util.addClass(component.find(name), "slds-fade-in-open");
 		$A.util.toggleClass(component.find(name), "slds-hide");
-
 	},
 
 	/*
 		Hides which modal (potential refactor)
 	*/
-	hideModal: function(component, event) {
+	hideModal : function(component, event) {
 		var idx = event.target.id;
 		var cmpTarget;
 		console.log(idx);
@@ -183,7 +136,7 @@
 		Not exactly used - want to have it here in case we need to
 		add a specific select button on resources to add
 	*/
-	buildList: function(component, event, helper) {
+	buildList : function(component, event, helper) {
 		var srToAssign = component.get("v.srToAssign");
 		var idx = event.target.id;
 		if(srToAssign.indexOf(idx) > -1) {
@@ -197,7 +150,7 @@
 	/*
 		Listener for change on sliders
 	*/
-	itemsChange: function(component, event) {
+	itemsChange : function(component, event) {
 		var srTimeChanges = component.get("v.srTimeChanges");
 		if(srTimeChanges == ''){
 			srTimeChanges = {};
@@ -205,10 +158,8 @@
 		var name = event.getSource().get("v.value");
 		var slidVal = event.getParam("value");
 		var sliderId = event.getSource().get("v.title");
-		function getSecondPart(str) {
-			return str.split('_')[1];
-		}
-		var srId = getSecondPart(sliderId);
+
+		var srId = sliderId.split('_')[1];
 		if(srTimeChanges[srId]) {
 			srTimeChanges[srId] = slidVal;
 		} else {
@@ -219,16 +170,16 @@
 	/*
 		disables pull down refresh
 	*/
-	handleTouchMove: function(component, event, helper) {
+	handleTouchMove : function(component, event, helper) {
 		event.stopPropagation();
 	},
 
 	/*
 		Shows the WO WOLI or SA when pressed
 	*/
-	recordPreview: function(component, event, helper) {
+	recordPreview : function(component, event, helper) {
 		var recordId = event.getSource().get("v.name");
-		if(recordId) {
+		if (recordId) {
 			component.set("v.selectedRecord", recordId);
 		}
 		// this sucks, but force:recordView sucks worse
@@ -245,16 +196,18 @@
 	*/
 	saveWorkAssignments: function(component, event, helper) {
 		//console.log(component.get("v.srTimeChanges"));
-		if(component.get("v.srTimeChanges") != '') {
+		if (component.get("v.srTimeChanges") != '') {
 			//addCrewBtnModal
 			$A.util.addClass(component.find("addCrewBtnModal"), "slds-hide");
 			$A.util.addClass(component.find("addTerBtnModal"), "slds-hide");
 			// if error - show modal again
-			helper.swa(component, event, 'sr');
-		} else if(component.get("v.eqTimeChanges") != '') {
+			var idx = event.getSource().getLocalId();
+			helper.saveWorkAssignments(component, idx);
+		} else if (component.get("v.eqTimeChanges") != '') {
 			//addEquipBtnModal
 			$A.util.addClass(component.find("addEquipBtnModal"), "slds-hide");
-			helper.swa(component, event, 'eq');
+			var idx = event.getSource().getLocalId();
+			helper.saveWorkAssignments(component, idx);
 		} else {
 			alert('No changes have been made to entries');
 		}
@@ -268,7 +221,8 @@
 	},
 
 	addPPRow: function(component, event, helper) {
-		helper.prodPurchRowHelper(component, event);
+		var idx = event.getSource().getLocalId();
+		helper.prodPurchRowHelper(component, idx);
 	},
 
 	/*
@@ -282,7 +236,8 @@
 		listens for change in product search
 	*/
 	searchProducts: function(component, event, helper) {
-		helper.checkForProd(component, event);
+		var searchTerm =  event.getSource().get("v.value");
+		helper.checkForProd(component, searchTerm);
 	},
 
 	/*
@@ -290,58 +245,9 @@
 		On success, creates an input text field for setting equipment time
 		TODO: move to helper...
 	*/
-	searchAssets: function(component, event, helper) {
+	searchAssets : function(component, event, helper) {
 		//console.log('in search assets');
-		var saId = component.get("v.saId");
-		var equipmentName = component.get("v.equipName");
-
-		var action = component.get("c.searchAssetsForProd");
-
-		action.setParams({
-			"searchTerm": equipmentName,
-			"saId": saId
-		});
-
-		action.setCallback(this, function(response) {
-			var name = response.getState();
-			if(name == "SUCCESS") {
-				//console.log('response.getReturnValue()');
-				//console.log(response.getReturnValue());
-				if(response.getReturnValue() == null) {
-					alert('That piece of equipment is not assigned to the proper Pricebook.  Please use another Truck Type and/or let a PWUT Admin know.');
-                    return;
-				}
-				$A.createComponents(
-					[
-					["ui:inputText",{
-						"class": "slds-truncate",
-						"change": component.getReference("c.setEquipTime"),
-						"aura:id": response.getReturnValue().Id,
-					}]
-					],
-
-					function(comps, status, errorMessage){
-						if (status == "SUCCESS") {
-							var table = component.get("v.equipmentTable");
-							//console.log(table);
-							comps.forEach(function(e) {
-								table.push(e);
-							});
-
-							component.set("v.equipmentTable", table);
-							//console.log(table);
-						}
-					}
-				);
-				component.find("findAssetBtn").destroy();
-			} else {
-				console.log('womp searchassets');
-                alert('That piece of equipment is not in the system. Please use another Truck and/or let a PWUT Admin know.');
-			}
-		});
-		$A.enqueueAction(action);
-		$A.util.removeClass(component.find("thankYouBtn"), "slds-hide");
-
+		helper.searchAssets(component);
 	},
 
 	/*
@@ -390,7 +296,8 @@
 	},
 
 	savePC: function(component, event, helper) {
-		helper.swa(component, event, 'pc');
+		var idx = event.getSource().getLocalId();
+		helper.saveWorkAssignments(component, idx);
 	},
 
 	/*
