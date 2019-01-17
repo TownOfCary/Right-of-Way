@@ -3,9 +3,11 @@
 		var action = component.get("c.assignedResourceAppts");
 		action.setCallback(this, function(response) {
 			var name = response.getState();
+			console.log(name);
 			if(name == "SUCCESS") {
+				console.log(response.getReturnValue());
 				component.set('v.assignedAppointments', response.getReturnValue());
-				//console.log(response.getReturnValue());
+				component.set('v.filteredAppointments', response.getReturnValue());
 			} else {
 				alert('Issue getting appointments.');
 			}
@@ -17,6 +19,7 @@
 		var action = component.get("c.getResources");
 		action.setCallback(this, function(response) {
 			var name = response.getState();
+			console.log(name);
 			if(name == "SUCCESS") {
 				//console.log('response.getReturnValue()');
 				//console.log(response.getReturnValue());
@@ -28,11 +31,14 @@
 	},
 
 	canAssign: function(component, event, helper) {
+		console.log('can we assign?');
 		var action = component.get("c.canAssign");
 		action.setCallback(this, function(response) {
 			var name = response.getState();
 			if (name == "SUCCESS") {
-				if (response.getReturnValue() == false) {
+				console.log('yes we can');
+				console.log(response.getReturnValue());
+				if (response.getReturnValue() === false) {
 					$A.util.toggleClass(component.find("canAssign"), "slds-hide");
 					$A.util.toggleClass(component.find("cannotAssign"), "slds-hide");
 				} else {
@@ -46,6 +52,40 @@
 
 		$A.enqueueAction(action);
 
+	},
+
+	buildCards : function(component) {
+		var appointmentList = component.get('v.filteredAppointments');
+		var cardList = [];
+		appointmentList.forEach(function(appointment) {
+			cardList.push([
+				"c:RoWAppointmentCard", {
+					 "resource": appointment,
+				 }
+			 ]);
+		})
+		console.log(cardList);
+		$A.createComponents(
+			cardList,
+			function(comps, status, errorMessage){
+				console.log(status);
+				console.log(errorMessage);
+				if (status == "SUCCESS") {
+					console.log('comps');
+					console.log(comps);
+					var appointmentCards = []
+					for (var j = 0; j < comps.length; j++) {
+						appointmentCards.push(comps[j]);
+					}
+					component.set("v.appointmentCards", appointmentCards);
+				} else if (status === "INCOMPLETE") {
+					console.log("No response from server or client is offline.");
+				} else if (status === "ERROR") {
+					console.log("Error: " + errorMessage);
+					console.log(errorMessage);
+				}
+			}
+		);
 	},
 
 	getAppResources: function(component, saId) {
@@ -63,11 +103,30 @@
 		action.setCallback(this, function(response) {
 			var name = response.getState();
 			if(name == "SUCCESS") {
-				//console.log('response.getReturnValue()');
-				//console.log(response.getReturnValue());
-				component.set('v.wo', response.getReturnValue());
-
+				console.log('response.getReturnValue()');
+				console.log(response.getReturnValue());
+				component.set('v.workWrapper', response.getReturnValue());
 				component.set('v.woId', response.getReturnValue().saWorkOrder.Id);
+
+				$A.createComponent(
+					'c:RoWEditAppointment', {
+						'workWrapper' : response.getReturnValue()
+					},
+					function(cmp, status, errorMessage){
+						console.log(status);
+						console.log(errorMessage);
+						if (status == "SUCCESS") {
+							console.log('cmp');
+							console.log(cmp);
+							component.set("v.editWrapper", cmp);
+						} else if (status === "INCOMPLETE") {
+							console.log("No response from server or client is offline.");
+						} else if (status === "ERROR") {
+							console.log("Error: " + errorMessage);
+							console.log(errorMessage);
+						}
+					}
+				);
 				var allProdCons = response.getReturnValue().saWorkOrder.ProductsConsumed;
 				// hoof this is ugly.
 				if (response.getReturnValue().saWorkOrder.TimeSheetEntries != undefined) {

@@ -111,13 +111,16 @@ public class RoWManagementController {
 		}
 		system.debug(stIdSet);
 
-		List<ServiceResource> srList =
-				[SELECT Id, Name
-				FROM ServiceResource
-				WHERE Id IN
-						(SELECT ServiceResourceId
-						FROM ServiceCrewMember
-						WHERE ServiceCrewId = :scList[0].Id)];
+		List<ServiceResource> srList = new List<ServiceResource>();
+		if (scList.size() > 0) {
+			srList =
+					[SELECT Id, Name
+					FROM ServiceResource
+					WHERE Id IN
+							(SELECT ServiceResourceId
+							FROM ServiceCrewMember
+							WHERE ServiceCrewId = :scList[0].Id)];
+		}
 
 		List<ServiceTerritoryMember> stmList =
 				[SELECT Id, ServiceTerritoryId, TerritoryType, ServiceResource.Name

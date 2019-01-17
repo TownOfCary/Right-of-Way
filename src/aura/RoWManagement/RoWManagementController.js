@@ -18,6 +18,11 @@
 		component.set('v.today', today);
 	},
 
+	buildCards : function(component, event, helper) {
+		console.log('filtered list changed');
+		helper.buildCards(component);
+	},
+
 	showSpinner : function (component, event, helper) {
         component.set("v.showSpinnerImage", true);
 		$A.util.removeClass(component.find('loaderModal'), "slds-hide");
@@ -72,9 +77,10 @@
 	/*
 		Whichever SA the user taps, overwrites aura variable saId for consumption later.
 	*/
-	editAppointment : function(component, event, helper) {
-
-		var idx = event.target.id;
+	handleEditAppointment : function(component, event, helper) {
+		console.log(component.get('v.assignedAppointments'));
+		var idx = event.getParam('appointmentId');
+		console.log(idx);
 		component.set('v.saId', idx);
 
 		$A.util.addClass(component.find("canAssign"), "slds-hide");
@@ -172,22 +178,6 @@
 	*/
 	handleTouchMove : function(component, event, helper) {
 		event.stopPropagation();
-	},
-
-	/*
-		Shows the WO WOLI or SA when pressed
-	*/
-	recordPreview : function(component, event, helper) {
-		var recordId = event.getSource().get("v.name");
-		if (recordId) {
-			component.set("v.selectedRecord", recordId);
-		}
-		// this sucks, but force:recordView sucks worse
-		window.setTimeout(
-			$A.getCallback(function() {
-				$A.util.removeClass(component.find("viewRecordBtnModal"), "slds-hide");
-			}), 1500
-		);
 	},
 
 	/*
@@ -298,16 +288,6 @@
 	savePC: function(component, event, helper) {
 		var idx = event.getSource().getLocalId();
 		helper.saveWorkAssignments(component, idx);
-	},
-
-	/*
-		Tree grid show/hide
-	*/
-	showExistEquip: function(component) {
-		$A.util.toggleClass(component.find("existEquipTree"), "slds-hide");
-	},
-	showExistEntries: function(component) {
-		$A.util.toggleClass(component.find("existEntryTree"), "slds-hide");
 	},
 
 	/*

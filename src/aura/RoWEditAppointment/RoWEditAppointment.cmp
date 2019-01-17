@@ -1,0 +1,189 @@
+<aura:component>
+
+    <ltng:require styles="{!$Resource.TheRightStyle}" />
+
+	<!-- PARENT ATTRS -->
+    <aura:attribute name="workWrapper" type="Object" />
+    <aura:attribute name="crewGridData" type="Object" default="[{}]"/>
+    <aura:attribute name="terGridData" type="Object" default="[{}]"/>
+    <aura:attribute name="equipGridData" type="Object" default="[{}]"/>
+    <aura:attribute name="eqOnlyGridData" type="Object" default="[{}]"/>
+    <aura:attribute name="srOnlyGridData" type="Object" default="[{}]"/>
+
+	<!-- ATTRS -->
+    <aura:attribute name="selectedRecord" type="String" />
+
+	<!-- SYS ATTRS -->
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+	<aura:attribute name="gridColumns" type="List" default="[{}]"/>
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+	<span class="slds-icon_container slds-icon-utility-back" style="padding-bottom: 5px;" title="" onclick="{!c.showAppts}">
+		<lightning:icon iconName="utility:back" size="medium" alternativeText="Return to List"/>
+   		<span class="slds-assistive-text"></span>
+    </span>
+    <!--<ui:scrollerWrapper class="pageScrollSize ">-->
+    <div class="slds-card slds-grid slds-grid_align-center">
+        <ui:button class="slds-size_1-of-4 slds-button slds-truncate slds-wrap slds-button_neutral addBtn addCrewBtn" aura:id="addCrewBtn" press="{!c.addButton}">Crew</ui:button>
+        <ui:button class="slds-size_1-of-4 slds-button slds-truncate slds-wrap slds-button_neutral addBtn addTerBtn" aura:id="addTerBtn" press="{!c.addButton}">Territory</ui:button>
+        <ui:button class="slds-size_1-of-4 slds-button slds-truncate slds-button_neutral addBtn addEquipBtn" aura:id="addEquipBtn" press="{!c.addButton}">Equipment</ui:button>
+        <ui:button class="slds-size_1-of-4 slds-button slds-truncate slds-button_neutral addBtn addProdBtn" aura:id="addProdBtn" press="{!c.addButton}">Consumables</ui:button>
+    </div>
+    <div class="slds-card slds-grid slds-grid_align-center">
+        <ui:button class="slds-button slds-button_neutral saStatusBtn slds-size_1-of-3 inProgBtn" aura:id="inProg" press="{!c.statusUpdate}">In Progress</ui:button>
+        <ui:button class="slds-button slds-button_neutral saStatusBtn slds-size_1-of-3 onHoldBtn" aura:id="onHold" press="{!c.statusUpdate}">On Hold</ui:button>
+        <ui:button class="slds-button slds-button_neutral saStatusBtn slds-size_1-of-3 completeBtn" aura:id="complete" press="{!c.statusUpdate}">Complete</ui:button>
+    </div>
+    <article aura:id="" class="slds-card" >
+        <table class="slds-table slds-table_bordered slds-table_cell-buffer">
+            <thead class="recordDetail">
+            <tr class="slds-text-title_caps">
+                <th scope="col">
+                    <div class="slds-truncate" title="Type">Type</div>
+                </th>
+                <th scope="col">
+                    <div class="slds-truncate" title="Status">Status</div>
+                </th>
+                <th scope="col">
+                    <div class="slds-truncate" title="Reference">Reference</div>
+                </th>
+                <th scope="col">
+                    <div class="slds-truncate" title="Date">Date</div>
+                </th>
+                <th scope="col">
+                    <div class="slds-truncate" title="Task">Task</div>
+                </th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <th scope="row" data-label="Type">
+                    <div class="slds-truncate" title="Work Order">Work Order</div>
+                </th>
+                <th scope="row" data-label="Status">
+                    <div class="slds-truncate" title="{!v.workWrapper.saWorkOrder.Status}">{!v.workWrapper.saWorkOrder.Status}</div>
+                </th>
+                <th scope="row" data-label="Reference">
+                    <div class="slds-truncate" name="{!v.workWrapper.saWorkOrder.Id}" title="{!v.workWrapper.saWorkOrder.WorkOrderNumber}"><lightning:button aura:id="workOrderId" name="{!v.workWrapper.saWorkOrder.Id}" class="recordBtn" onclick="{!c.recordPreview}">{!v.workWrapper.saWorkOrder.WorkOrderNumber}</lightning:button></div>
+                </th>
+                <th scope="row" data-label="Date">
+                    <div class="slds-truncate" title="{!v.workWrapper.saWorkOrder.pwut_toc__Due_Date__c}"><ui:outputDate value="{!v.workWrapper.saWorkOrder.pwut_toc__Due_Date__c}" /></div>
+                </th>
+                <th scope="row" data-label="Task">
+                    <div class="slds-truncate" title="{!v.workWrapper.saWorkOrder.Subject}">{!v.workWrapper.saWorkOrder.Subject}</div>
+                </th>
+            </tr>
+            <tr>
+                <th scope="row" data-label="Type">
+                    <div class="slds-truncate" title="SA">SA</div>
+                </th>
+                <th scope="row" data-label="Status">
+                    <div class="slds-truncate" title="{!v.workWrapper.serviceAppointment.Status}">{!v.workWrapper.serviceAppointment.Status}</div>
+                </th>
+                <th scope="row" data-label="Reference">
+                    <div class="slds-truncate" name="{!v.workWrapper.serviceAppointment.Id}" title="{!v.workWrapper.serviceAppointment.AppointmentNumber}"><lightning:button name="{!v.workWrapper.serviceAppointment.Id}" class="recordBtn" onclick="{!c.recordPreview}">{!v.workWrapper.serviceAppointment.AppointmentNumber}</lightning:button></div>
+                </th>
+                <th scope="row" data-label="Date">
+                    <div class="slds-truncate" title="{!v.workWrapper.serviceAppointment.SchedStartTime}"><ui:outputDate value="{!v.workWrapper.serviceAppointment.SchedStartTime}" /></div>
+                </th>
+                <th scope="row" data-label="Task">
+                    <div class="slds-truncate" title="{!v.workWrapper.serviceAppointment.Subject}">{!v.workWrapper.serviceAppointment.Subject}</div>
+                </th>
+            </tr>
+            </tbody>
+        </table>
+    </article>
+
+    <ui:scrollerWrapper class="pageScrollSize ">
+        <article aura:id="crewTree" class="slds-card" >
+            <div class="slds-card__header">
+                <h2 style="font-size: 18px;">My Crew Time Sheet Entries:</h2>
+            </div>
+            <div class="slds-card__body slds-card__body_inner">
+                <lightning:treeGrid columns="{!v.gridColumns}"
+                                    data="{!v.crewGridData}"
+                                    keyField="name"
+                                    hideCheckboxColumn="false"
+                />
+            </div>
+        </article>
+        <article aura:id="terTree" class="slds-card" >
+            <div class="slds-card__header">
+                <h2 style="font-size: 18px;">Territory Time Sheet Entries:</h2>
+            </div>
+            <div class="slds-card__body slds-card__body_inner">
+                <lightning:treeGrid columns="{!v.gridColumns}"
+                                    data="{!v.terGridData}"
+                                    keyField="name"
+                                    hideCheckboxColumn="false"
+                />
+            </div>
+        </article>
+        <article aura:id="equipTree" class="slds-card" >
+            <div class="slds-card__header">
+                <h2 style="font-size: 18px;">Equipment Time Sheet Entries:</h2>
+            </div>
+            <div class="slds-card__body slds-card__body_inner">
+                <lightning:treeGrid columns="{!v.gridColumns}"
+                                    data="{!v.equipGridData}"
+                                    keyField="name"
+                                    hideCheckboxColumn="false"
+                />
+            </div>
+        </article>
+        <article aura:id="eqOnly" class="slds-card" >
+            <div class="slds-card__header">
+                <h2 style="font-size: 18px;">Prev Equip Hours:</h2>
+            </div>
+            <div aura:id="existEquipTree" class="slds-card__body slds-card__body_inner">
+                <lightning:treeGrid columns="{!v.gridColumns}"
+                                    data="{!v.eqOnlyGridData}"
+                                    keyField="name"
+                                    hideCheckboxColumn="false"
+                />
+            </div>
+        </article>
+        <article aura:id="srOnly" class="slds-card" >
+            <div class="slds-card__header">
+            	<h2 style="font-size: 18px;">Prev Resource Hours:</h2>
+            </div>
+            <div aura:id="existEntryTree" class="slds-card__body slds-card__body_inner">
+                <lightning:treeGrid columns="{!v.gridColumns}"
+                                    data="{!v.srOnlyGridData}"
+                                    keyField="name"
+                                    hideCheckboxColumn="false"
+                />
+            </div>
+        </article>
+    </ui:scrollerWrapper>
+
+    <!-- Record Modal -->
+
+    <aura:if isTrue="{!v.isOpen}">
+		<div aura:id="viewRecordBtnModal" style="z-index: 1776;">
+			<section role="dialog" tabindex="-1" style="max-height: 60rem; min-height: 60rem;" class="slds-modal slds-fade-in-open slds-modal_large" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
+				<div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.hideModal }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+						<ui:scrollerWrapper class="pageScrollSize ">
+							<div class="" aura:id="detailCard" style="padding: 5px;">
+								<div class="recordView slds-card">
+									<force:recordView recordId="{!v.selectedRecord}" aura:id="viewRecord" />
+								</div>
+							</div>
+						</ui:scrollerWrapper>
+					</div>
+				</div>
+			</section>
+			<div class="slds-backdrop slds-backdrop_open"></div>
+		</div>
+	</aura:if>
+
+</aura:component>

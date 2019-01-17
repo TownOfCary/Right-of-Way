@@ -1,4 +1,4 @@
-.THIS .addBtn {
+.addBtn {
     color: black;
     font-weight: bold;
     font-size: 18px;
@@ -7,7 +7,7 @@
     padding: 5px;
 }
 
-.THIS .saStatusBtn {
+.saStatusBtn {
     min-height: 3rem;
     color: black;
     font-weight: bold;
@@ -16,92 +16,92 @@
 
 }
 
-.THIS .showEntrBtn {
+.showEntrBtn {
     background-color: #d5e7e8;
 }
 
-.THIS .showEqBtn {
+.showEqBtn {
     background-color: #d5e7e8;
 }
 
-.THIS .editSABtn {
+.editSABtn {
     background-color: #d5e7e8;
     border-style: groove;
     color: black;
 }
-.THIS .modalBtn {
+.modalBtn {
     min-width: 7rem;
     color: black;
     min-height: 3rem;
 }
 
-.THIS .addPurchTab {
+.addPurchTab {
     color: rgb(94, 142, 99);
 }
-.THIS .addProdTab {
+.addProdTab {
     color: rgb(52, 128, 141);
 }
 
-.THIS .recordBtn {
+.recordBtn {
     background-color: #916e95;
     color: white;
     border-style: groove;
     min-width: 100%;
     font-weight: bold;
 }
-.THIS .saveWorkBtn {
+.saveWorkBtn {
     background-color: #ff7866;
 }
 
-.THIS .savePRCBtn{
+.savePRCBtn{
     background-color: #ff7866;
 }
 
-.THIS .refProdPurchBtn{
+.refProdPurchBtn{
     background-color: #ff7866;
 }
 
-.THIS .inProgBtn {
+.inProgBtn {
     background-color: #4aadbd;
 }
-.THIS .completeBtn {
+.completeBtn {
     background-color: #9dbea0;
 }
-.THIS .onHoldBtn {
+.onHoldBtn {
     background-color: #ffc875;
 }
 
-.THIS .cancelBtn {
+.cancelBtn {
     background-color: #4aadbd;
 }
-.THIS .addEquipBtn{
+.addEquipBtn{
     background-color: #ff7866;
 
 }
-.THIS .addTerBtn{
+.addTerBtn{
     background-color: #4aadbd;
 }
-.THIS .addCrewBtn {
+.addCrewBtn {
     background-color: #ff9e65;
 }
-.THIS .addProdBtn {
+.addProdBtn {
     background-color: #ffc875;
 }
-.THIS .durationSlider {
+.durationSlider {
     min-width: 40rem;
     padding-left: 5px;
 }
 
-.THIS .btnUl {
+.btnUl {
     min-width: 384px;
 }
 
 
-.THIS .slds-table-bordered {
+.slds-table-bordered {
     background-color: #f4efe1;
 }
 
-.THIS .slds-slider__range {
+.slds-slider__range {
     -webkit-appearance: none;
     width: 100%;
     height: 12px;
@@ -113,7 +113,7 @@
     transition: opacity .2s;
 }
 
-.THIS .slds-slider__range::-webkit-slider-thumb {
+.slds-slider__range::-webkit-slider-thumb {
     -webkit-appearance: none;
 
     width: 20px;
@@ -123,7 +123,7 @@
     cursor: pointer;
 }
 
-.THIS .slds-slider__range::-moz-range-thumb {
+.slds-slider__range::-moz-range-thumb {
     width: 20px;
     height: 20px;
     border-radius: 50%;
@@ -131,7 +131,7 @@
     cursor: pointer;
 }
 
-.THIS .faded {
+.faded {
 
     background-color: gray;
     opacity: .8;
