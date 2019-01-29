@@ -9,6 +9,10 @@
     <aura:attribute name="equipGridData" type="Object" default="[{}]"/>
     <aura:attribute name="eqOnlyGridData" type="Object" default="[{}]"/>
     <aura:attribute name="srOnlyGridData" type="Object" default="[{}]"/>
+    <aura:attribute name="crewModal" type="Boolean" default="false" />
+    <aura:attribute name="territoryModal" type="Boolean" default="false" />
+    <aura:attribute name="equipmentModal" type="Boolean" default="false" />
+    <aura:attribute name="consumableModal" type="Boolean" default="false" />
 
 	<!-- ATTRS -->
     <aura:attribute name="selectedRecord" type="String" />
@@ -19,16 +23,16 @@
 
     <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
 
-	<span class="slds-icon_container slds-icon-utility-back" style="padding-bottom: 5px;" title="" onclick="{!c.showAppts}">
-		<lightning:icon iconName="utility:back" size="medium" alternativeText="Return to List"/>
-   		<span class="slds-assistive-text"></span>
-    </span>
+    <aura:registerEvent name="updateStatus" type="c:UpdateStatus" />
+
+
     <!--<ui:scrollerWrapper class="pageScrollSize ">-->
+    <!-- TODO: This section next -->
     <div class="slds-card slds-grid slds-grid_align-center">
-        <ui:button class="slds-size_1-of-4 slds-button slds-truncate slds-wrap slds-button_neutral addBtn addCrewBtn" aura:id="addCrewBtn" press="{!c.addButton}">Crew</ui:button>
-        <ui:button class="slds-size_1-of-4 slds-button slds-truncate slds-wrap slds-button_neutral addBtn addTerBtn" aura:id="addTerBtn" press="{!c.addButton}">Territory</ui:button>
-        <ui:button class="slds-size_1-of-4 slds-button slds-truncate slds-button_neutral addBtn addEquipBtn" aura:id="addEquipBtn" press="{!c.addButton}">Equipment</ui:button>
-        <ui:button class="slds-size_1-of-4 slds-button slds-truncate slds-button_neutral addBtn addProdBtn" aura:id="addProdBtn" press="{!c.addButton}">Consumables</ui:button>
+        <ui:button class="slds-size_1-of-4 slds-button slds-truncate slds-wrap slds-button_neutral addBtn addCrewBtn" aura:id="crewModal" press="{!c.modalButton}">Crew</ui:button>
+        <ui:button class="slds-size_1-of-4 slds-button slds-truncate slds-wrap slds-button_neutral addBtn addTerBtn" aura:id="territoryModal" press="{!c.modalButton}">Territory</ui:button>
+        <ui:button class="slds-size_1-of-4 slds-button slds-truncate slds-button_neutral addBtn addEquipBtn" aura:id="equipmentModal" press="{!c.modalButton}">Equipment / Materials</ui:button>
+        <ui:button class="slds-size_1-of-4 slds-button slds-truncate slds-button_neutral addBtn addProdBtn" aura:id="consumableModal" press="{!c.modalButton}">Purchased Materials</ui:button>
     </div>
     <div class="slds-card slds-grid slds-grid_align-center">
         <ui:button class="slds-button slds-button_neutral saStatusBtn slds-size_1-of-3 inProgBtn" aura:id="inProg" press="{!c.statusUpdate}">In Progress</ui:button>
@@ -134,7 +138,7 @@
         </article>
         <article aura:id="eqOnly" class="slds-card" >
             <div class="slds-card__header">
-                <h2 style="font-size: 18px;">Prev Equip Hours:</h2>
+                <h2 style="font-size: 18px;">Prev Equipment / Materials:</h2>
             </div>
             <div aura:id="existEquipTree" class="slds-card__body slds-card__body_inner">
                 <lightning:treeGrid columns="{!v.gridColumns}"

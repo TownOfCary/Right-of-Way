@@ -17,5 +17,18 @@
 				label: 'Status'
 			}];
 		component.set('v.gridColumns', columns);
+	},
+
+	statusUpdate : function(component, status) {
+		var event = component.getEvent("updateStatus");
+		var saId = component.get("v.workWrapper").serviceAppointment.Id;
+
+		event.setParams({
+			"saId": saId,
+			"status": status
+		});
+
+		event.fire();
 	}
+
 })

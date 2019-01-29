@@ -23,55 +23,22 @@
 		helper.buildCards(component);
 	},
 
-	showSpinner : function (component, event, helper) {
-        component.set("v.showSpinnerImage", true);
-		$A.util.removeClass(component.find('loaderModal'), "slds-hide");
-		$A.util.removeClass(component.find("loadModal"), "slds-hide");
-    },
-
-    hideSpinner : function (component, event, helper) {
-        component.set("v.showSpinnerImage", false);
-		$A.util.addClass(component.find('loaderModal'), "slds-hide");
-		$A.util.addClass(component.find("loadModal"), "slds-hide");
-    },
-
 	/*
 		Searches the service appointment list for day number or subject
 	*/
 	updateSelect : function(component, event, helper) {
-		var searchTerm = component.find("searchTerm").get("v.value").toUpperCase();
-		var appts = component.get("v.assignedAppointments");
-		var filteredAppts = appts.filter( a => (a.ServiceAppointment.Street != undefined && a.ServiceAppointment.Street.toUpperCase().includes(searchTerm)) ||
-				a.ServiceAppointment.Subject.toUpperCase().includes(searchTerm) || a.ServiceAppointment.SchedStartTime.includes(searchTerm));
-		component.set('v.filteredAppointments', filteredAppts);
-		if(filteredAppts != []) {
-			$A.util.toggleClass(component.find("availableAppointments"), "slds-hide");
-			$A.util.toggleClass(component.find("filteredAppointments"), "slds-hide");
-		}
-	},
-
-	showAppts : function(component, event, helper) {
-		$A.util.toggleClass(component.find("canAssign"), "slds-hide");
-		$A.util.toggleClass(component.find("woScreen"), "slds-hide");
-	},
-
-	territoryMemSearch : function(component, event, helper) {
-		var searchTerm = component.find("memSearch").get("v.value").toUpperCase();
-		var territoryMembers = component.get("v.terMem");
-
-		var memSearch = territoryMembers.filter(tm =>  tm.Name.toUpperCase().includes(searchTerm));
-
-		component.set("v.memFiltered", true);
-		component.set("v.filteredTerMem", memSearch);
+		helper.updateSelect(component);
 	},
 
 	/*
 		Builds a dynamic list of available statuses to change to
 		ServiceAppointment.Status.getDescribe().getPicklistValues()
 	*/
-	statusUpdate : function(component, event, helper) {
-		var status = event.getSource().getLocalId();
-		helper.statusUpdate(component, status);
+	handleStatusUpdate : function(component, event, helper) {
+		component.set('v.doingWork', true);
+		var saId = event.getParam('saId');
+		var status = event.getParam('status');
+		helper.handleStatusUpdate(component, saId, status);
 	},
 
 	/*
@@ -81,7 +48,6 @@
 		console.log(component.get('v.assignedAppointments'));
 		var idx = event.getParam('appointmentId');
 		console.log(idx);
-		component.set('v.saId', idx);
 
 		$A.util.addClass(component.find("canAssign"), "slds-hide");
 		$A.util.removeClass(component.find("woScreen"), "slds-hide");
@@ -89,68 +55,26 @@
 	},
 
 	/*
-		Future use function to do something on selecting a tree item
-	*/
-	onTreeItemSelected : function(component, event, helper) {
-		console.log(event.getParam("name"));
-		var recordId = event.getParam("name");
-		if (recordId) {
-			component.set("v.selectedRecord", recordId);
-			console.log('hey ma: ' + recordId);
-		}
-	},
-
-	/*
 		Displays which modal
 	*/
 	addButton : function(component, event, helper) {
-		var sa = component.get("v.saId");
 		var status = event.getSource().getLocalId();
 		var name = status + "Modal";
 		$A.util.addClass(component.find(name), "slds-fade-in-open");
 		$A.util.toggleClass(component.find(name), "slds-hide");
 	},
 
+	showAppts : function(component, event, helper) {
+		$A.util.toggleClass(component.find("canAssign"), "slds-hide");
+		$A.util.toggleClass(component.find("woScreen"), "slds-hide");
+	},
+
 	/*
 		Hides which modal (potential refactor)
 	*/
 	hideModal : function(component, event) {
-		var idx = event.target.id;
-		var cmpTarget;
-		console.log(idx);
-		if(idx == 'cancelCrewBtn') {
-			cmpTarget = component.find('addCrewBtnModal');
-		} else if(idx == 'cancelTerBtn') {
-			cmpTarget = component.find('addTerBtnModal');
-		} else if(idx == 'cancelEquipBtn') {
-			cmpTarget = component.find('addEquipBtnModal');
-		} else if(idx == 'purchaseModal') {
-			cmpTarget = component.find('addPurchaseBtnModal');
-		} else if(idx == 'cancelRecordBtn') {
-			cmpTarget = component.find('viewRecordBtnModal');
-		} else if(idx == 'cancelProdBtn') {
-			cmpTarget = component.find('addProdBtnModal');
-		} //else if(idx == 'cancelPCBtn') {
-			//cmpTarget = component.find('addProdBtnModal');
-		//}
-		$A.util.addClass(cmpTarget, 'slds-hide');
-		component.set("v.srToAssign", '');
-		component.set("v.srTimeChanges", '');
-	},
-
-	/*
-		Not exactly used - want to have it here in case we need to
-		add a specific select button on resources to add
-	*/
-	buildList : function(component, event, helper) {
-		var srToAssign = component.get("v.srToAssign");
-		var idx = event.target.id;
-		if(srToAssign.indexOf(idx) > -1) {
-			srToAssign.splice(srToAssign.indexOf(idx), 1);
-		} else {
-			srToAssign.push(idx);
-		}
-		var str = "slider_" + idx;
+		var modalVarName = event.getSource().getLocalId();
+		component.set('v.' + modalVarName, false);
 	},
 
 	/*
@@ -172,177 +96,70 @@
 			srTimeChanges[srId] = slidVal;
 			component.set('v.srTimeChanges', srTimeChanges);
 		}
-    },
-	/*
-		disables pull down refresh
-	*/
-	handleTouchMove : function(component, event, helper) {
-		event.stopPropagation();
 	},
 
-	/*
-		Call the swa helper function after checking which type - equip or resources
-		- and saves the time sheet entries or products consumed
-	*/
-	saveWorkAssignments: function(component, event, helper) {
-		//console.log(component.get("v.srTimeChanges"));
-		if (component.get("v.srTimeChanges") != '') {
-			//addCrewBtnModal
-			$A.util.addClass(component.find("addCrewBtnModal"), "slds-hide");
-			$A.util.addClass(component.find("addTerBtnModal"), "slds-hide");
-			// if error - show modal again
-			var idx = event.getSource().getLocalId();
-			helper.saveWorkAssignments(component, idx);
-		} else if (component.get("v.eqTimeChanges") != '') {
-			//addEquipBtnModal
-			$A.util.addClass(component.find("addEquipBtnModal"), "slds-hide");
-			var idx = event.getSource().getLocalId();
-			helper.saveWorkAssignments(component, idx);
-		} else {
-			alert('No changes have been made to entries');
-		}
+	saveTimeChanges : function(component, event, helper) {
+		console.log('saving times');
+		component.set('v.doingWork', true);
+		var type = event.getSource().getLocalId();
+		helper.saveTimeChanges(component, type);
 	},
 
-	/*
-		Adds a row for adding more equipment
-	*/
-	addModalRow: function(component, event, helper) {
-		helper.equipmentRowHelper(component, event);
+	saveEquipment : function(component, event, helper) {
+		console.log('saving equpiment');
+		var equipment = component.get('v.equipmentList');
+		var equipmentList = [];
+		for (var key in equipment) {
+          equipmentList.push(equipment[key]);
+        }
+		helper.saveAppointmentProducts(component, equipmentList);
 	},
 
-	addPPRow: function(component, event, helper) {
-		var idx = event.getSource().getLocalId();
-		helper.prodPurchRowHelper(component, idx);
+	addWorkOrderMaterial : function(component, event, helper) {
+		var auraId = "workOrderMaterial" + Date.now();
+		var attributes = {
+			"auraId" : auraId,
+			"aura:Id" : auraId
+		};
+
+		helper.createCmp(component, 'c:AddWorkOrderMaterial', attributes, 'v.workOrderMaterials');
 	},
 
-	/*
-		overwrites aura attr equipName with new equipment added
-	*/
-	setEquipName: function(component, event) {
-		component.set("v.equipName", event.getSource().get("v.value"));
+	addEquipment : function(component, event, helper) {
+		console.log('creating equipment');
+		var auraId = "equipment" + Date.now();
+		var attributes = {
+			"auraId" : auraId,
+			"aura:Id" : auraId,
+			"priceBook" : component.getReference("v.workWrapper.saWorkOrder.WorkType.pwut_toc__Price_Book__c")
+		};
+
+		helper.createCmp(component, 'c:AddEquipment', attributes, 'v.equipments');
 	},
 
-	/*
-		listens for change in product search
-	*/
-	searchProducts: function(component, event, helper) {
-		var searchTerm =  event.getSource().get("v.value");
-		helper.checkForProd(component, searchTerm);
+	createAddOn : function(component, event, helper) {
+		console.log('NEW ADDON INCOMING');
+		var newObject = event.getParam("newObject");
+		console.log(JSON.stringify(newObject));
+		var auraId = event.getParam("auraId");
+		var type = event.getParam("type");
+		helper.handleNewAddOn(component, newObject, auraId, type);
 	},
 
-	/*
-		Asks salesforce to find a product from the asset(equipment) number
-		On success, creates an input text field for setting equipment time
-		TODO: move to helper...
-	*/
-	searchAssets : function(component, event, helper) {
-		//console.log('in search assets');
-		helper.searchAssets(component);
+	removeAddOn : function(component, event, helper) {
+		var auraId = event.getParam("auraId");
+		var type = event.getParam("type");
+		helper.removeAddOn(component, auraId, type);
 	},
 
-	/*
-		Sets the time of the equipment
-	*/
-	setEquipTime: function(component, event) {
-		//console.log('set equip time');
-		var eqTimeChanges = component.get("v.eqTimeChanges");
-		//console.log(eqTimeChanges);
-		if(eqTimeChanges == ''){
-			eqTimeChanges = {};
-		}
-		var minutes = event.getSource().get("v.value");
-		var eqId = event.getSource().getLocalId();
-		//console.log('min: ' + minutes);
-		//console.log('id: ' + eqId);
-
-		if(eqTimeChanges[eqId]) {
-			eqTimeChanges[eqId] = minutes;
-		} else {
-			eqTimeChanges[eqId] = minutes;
-			component.set('v.eqTimeChanges', eqTimeChanges);
-		}
-	},
-
-	setProdQuant: function(component, event) {
-		console.log('set pcQuantChanges');
-		var prQuantChanges = component.get("v.pcQuantChanges");
-		console.log(prQuantChanges);
-		if(prQuantChanges == ''){
-			prQuantChanges = {};
-		}
-		var minutes = event.getSource().get("v.value");
-		var prId = event.getSource().getLocalId();
-		console.log('min: ' + minutes);
-		console.log('id: ' + prId);
-
-		if(prQuantChanges[prId]) {
-			prQuantChanges[prId] = minutes;
-		} else {
-			prQuantChanges[prId] = minutes;
-			component.set('v.pcQuantChanges', prQuantChanges);
-		}
-		console.log('end');
-		console.log(prQuantChanges['01u2F000003O0P1QAK']);
-	},
-
-	savePC: function(component, event, helper) {
-		var idx = event.getSource().getLocalId();
-		helper.saveWorkAssignments(component, idx);
-	},
-
-	/*
-		Will implement when SF fixes their $!%^.
-	*/
-	onTreeSelect: function(component, event, helper) {
-		/*console.log('tree, reporting in!');
-		var selRows = component.get("v.selectedSROnlyRows");
-
-		var selectedRow = event.getParam('selectedRows');
-		console.log('selectedRow');
-		console.log(selectedRow);
-		if(selectedRow[0] != undefined) {
-			console.log('new');
-			selRows.push(selectedRow[0].name);
-		} else {
-			console.log('dup?');
-			//selRows.splice(selRows.indexOf());
-
-		}
-		component.set('v.selectedSROnlyRows', selRows);
-
-		console.log('asdoifh');
-		console.log(component.get("v.selectedSROnlyRows"));*/
-
-	},
-
-	modalTabSelect: function(component, event, helper) {
-		console.log('event.getSource().getLocalId();');
-		console.log(event.getSource().getLocalId());
-		var idx = event.getSource().getLocalId();
-		var notElement;
-		var element;
-		var notIdx;
-		if(idx == 'addPurch') {
-			element = 'purchaseTab';
-			notElement = 'productTab';
-			notIdx = 'addProd';
-		} else {
-			notElement = 'purchaseTab';
-			element = 'productTab';
-			notIdx = 'addPurch';
+	saveWorkOrderMats : function(component, event, helper) {
+		var workOrderMaterials = component.get('v.workOrderMaterialList');
+		var workOrderMaterialList = [];
+		for (var key in workOrderMaterials) {
+		  workOrderMaterialList.push(workOrderMaterials[key]);
 		}
 
-		console.log(element);
-		console.log(notElement);
-
-		$A.util.removeClass(component.find(element), "slds-hide");
-		$A.util.addClass(component.find(notElement), "slds-hide");
-	},
-
-	refreshProdPurch: function(component, event, helper) {
-		var woli = component.get('v.woliId');
-		helper.getExistingPurch(component, woli);
-		helper.getExistingProd(component, woli);
+		helper.saveWorkOrderMats(component, workOrderMaterialList);
 	}
 
 })

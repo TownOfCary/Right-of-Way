@@ -136,3 +136,7 @@
     background-color: gray;
     opacity: .8;
 }
+
+.maxWidth {
+	width: 100%;
+}

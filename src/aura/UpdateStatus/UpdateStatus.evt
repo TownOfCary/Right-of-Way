@@ -1,0 +1,4 @@
+<aura:event type="COMPONENT" description="Event template">
+	<aura:attribute name="saId" type="String" />
+	<aura:attribute name="status" type="String" />
+</aura:event>

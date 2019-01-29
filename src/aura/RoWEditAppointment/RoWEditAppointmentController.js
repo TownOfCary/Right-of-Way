@@ -18,6 +18,32 @@
 
 	hideModal : function(component, event) {
 		component.set('v.isOpen', false);
-	}
+	},
+
+	/*
+		Builds a dynamic list of available statuses to change to
+		ServiceAppointment.Status.getDescribe().getPicklistValues()
+	*/
+	statusUpdate : function(component, event, helper) {
+		var status = event.getSource().getLocalId();
+		if (status == 'inProg') {
+			status = 'In Progress';
+		} else if (status == 'complete') {
+			status = 'Site Checkout';
+		} else if (status == 'onHold') {
+			status = 'On Hold';
+		} else {
+			alert('Problem with the status');
+		}
+		helper.statusUpdate(component, status);
+	},
+
+	/*
+		Displays which modal
+	*/
+	modalButton : function(component, event, helper) {
+		var modalVarName = event.getSource().getLocalId();
+		component.set('v.' + modalVarName, true);
+	},
   
 })

@@ -1,0 +1,33 @@
+<aura:component >
+    <aura:attribute name="auraId" type="String" />
+    <aura:attribute name="priceBook" type="String" />
+    <aura:attribute name="equipReset" type="String" />
+    <aura:attribute name="prodConsumed" type="ProductConsumed" default="{ 'sobjectType' : 'ProductConsumed' }"/>
+
+    <aura:handler name="change" value="{!v.prodConsumed}" action="{!c.handleChange}" />
+
+    <aura:registerEvent name="removeAddOn" type="pwut_toc.RemoveAddOn" />
+    <aura:registerEvent name="createAddOn" type="pwut_toc.CreateAddOn" />
+
+    <base_toc:ACSHelper aura:id="acsHelper" />
+
+    <lightning:layout horizontalAlign="center" verticalAlign="stretch" multipleRows="true">
+        <lightning:layoutItem size="8" flexibility="auto" padding="around-small" title="Product" >
+            <l_lookup:Lookup aura:id="product_lookup"
+                             styleClass="slds-col"
+                             showFiveRecent="true"
+                             objectType="PriceBookEntry"
+                             additionalField="ProductCode"
+                             setTo="{!v.equipReset}"
+                             isRequired="true"
+                             selectedRecordId="{!v.prodConsumed.PricebookEntryId}"
+                             queryCondition="{!'Pricebook2Id = \'' + v.priceBook + '\''}" />
+        </lightning:layoutItem>
+        <lightning:layoutItem size="3" flexibility="auto" padding="around-small" title="Quantity" >
+            <lightning:input type="number" name="quant" label="Amount Used" required="true" value="{!v.prodConsumed.QuantityConsumed}"/>
+        </lightning:layoutItem>
+        <lightning:layoutItem size="1" flexibility="auto" padding="around-small" title="Remove" >
+            <lightning:buttonIcon iconName="utility:close" alternativeText="Remove Product" onclick="{!c.removeEquipment}" />
+        </lightning:layoutItem>
+    </lightning:layout>
+</aura:component>

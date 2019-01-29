@@ -1,0 +1,26 @@
+<aura:component >
+    <aura:attribute name="auraId" type="String" />
+    <aura:attribute name="workOrderMaterial" type="pwut_toc__Work_Order_Material__c" default="{ 'sobjectType' : 'pwut_toc__Work_Order_Material__c' }"/>
+
+    <aura:handler name="change" value="{!v.workOrderMaterial}" action="{!c.handleChange}" />
+
+    <aura:registerEvent name="removeAddOn" type="pwut_toc.RemoveAddOn" />
+    <aura:registerEvent name="createAddOn" type="pwut_toc.CreateAddOn" />
+
+    <base_toc:ACSHelper aura:id="acsHelper" />
+
+    <lightning:layout horizontalAlign="center" verticalAlign="stretch" multipleRows="false">
+        <lightning:layoutItem size="5" flexibility="auto" padding="around-small" title="Product" >
+            <lightning:input type="text" name="description" label="Item" required="true" value="{!v.workOrderMaterial.pwut_toc__Item_Description__c}"/>
+        </lightning:layoutItem>
+        <lightning:layoutItem size="3" flexibility="auto" padding="around-small" title="Quantity" >
+            <lightning:input type="number" name="cost" label="Price Per Unit" required="true" value="{!v.workOrderMaterial.pwut_toc__Cost__c}" formatter="currency"/>
+        </lightning:layoutItem>
+        <lightning:layoutItem size="3" flexibility="auto" padding="around-small" title="Quantity" >
+            <lightning:input type="number" name="quant" label="Quantity" required="true" value="{!v.workOrderMaterial.pwut_toc__Quantity__c}"/>
+        </lightning:layoutItem>
+        <lightning:layoutItem size="1" flexibility="auto" padding="around-small" title="Remove" >
+            <lightning:buttonIcon iconName="utility:close" alternativeText="Remove Product" onclick="{!c.removeWorkOrderMaterial}" />
+        </lightning:layoutItem>
+    </lightning:layout>
+</aura:component>
