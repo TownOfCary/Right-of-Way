@@ -1,43 +1,19 @@
 ({
-	getAppointments: function(component, event, helper) {
-		var action = component.get("c.assignedResourceAppts");
-		action.setCallback(this, function(response) {
-			var name = response.getState();
-			if(name == "SUCCESS") {
-				component.set('v.assignedAppointments', response.getReturnValue());
-				//console.log(response.getReturnValue());
-			} else {
-				alert('Issue getting appointments.');
-			}
-		});
-		$A.enqueueAction(action);
-	},
-
-	getRes: function(component) {
-		var action = component.get("c.getResources");
-		action.setCallback(this, function(response) {
-			var name = response.getState();
-			if(name == "SUCCESS") {
-				//console.log('response.getReturnValue()');
-				//console.log(response.getReturnValue());
-				component.set('v.crewMem', response.getReturnValue().crewList);
-				component.set('v.terMem', response.getReturnValue().trList);
-			}
-		});
-		$A.enqueueAction(action);
-	},
 
 	canAssign: function(component, event, helper) {
+		console.log('can we assign?');
 		var action = component.get("c.canAssign");
 		action.setCallback(this, function(response) {
-			var name = response.getState();
-			if(name == "SUCCESS") {
-				if(response.getReturnValue() == false) {
+			var state = response.getState();
+			if (state === "SUCCESS") {
+				console.log('yes we can');
+				console.log(response.getReturnValue());
+				if (response.getReturnValue() === false) {
 					$A.util.toggleClass(component.find("canAssign"), "slds-hide");
 					$A.util.toggleClass(component.find("cannotAssign"), "slds-hide");
 				} else {
 					this.getAppointments(component);
-					this.getRes(component);
+					this.getServiceResources(component);
 				}
 			} else {
 				alert('Issue in the canAssign');
@@ -48,59 +24,166 @@
 
 	},
 
-	getAppResources: function(component, saId) {
-		var resourceList = component.get("v.existingSAResources");
-		component.set('v.saSpecificResources', resourceList[saId]);
+	getAppointments: function(component) {
+		var action = component.get("c.assignedResourceAppts");
+		action.setCallback(this, function(response) {
+			var state = response.getState();
+			console.log(state);
+			if(state === "SUCCESS") {
+				console.log(response.getReturnValue());
+				component.set('v.assignedAppointments', response.getReturnValue());
+				component.set('v.filteredAppointments', response.getReturnValue());
+			} else {
+				alert('Issue getting appointments.');
+			}
+		});
+		$A.enqueueAction(action);
+	},
+
+	getServiceResources : function(component) {
+		var action = component.get("c.getResources");
+		action.setCallback(this, function(response) {
+			var state = response.getState();
+			console.log(state);
+			if(state === "SUCCESS") {
+				//console.log('response.getReturnValue()');
+				//console.log(response.getReturnValue());
+				component.set('v.crewMem', response.getReturnValue().crewList);
+				component.set('v.terMem', response.getReturnValue().trList);
+			}
+		});
+		$A.enqueueAction(action);
+	},
+
+	buildCards : function(component) {
+		var appointmentList = component.get('v.filteredAppointments');
+		var cardList = [];
+		appointmentList.forEach(function(appointment) {
+			cardList.push([
+				"c:RoWAppointmentCard", {
+					 "resource": appointment,
+				 }
+			 ]);
+		})
+		console.log(cardList);
+		$A.createComponents(
+			cardList,
+			function(comps, status, errorMessage){
+				console.log(status);
+				console.log(errorMessage);
+				if (status === "SUCCESS") {
+					console.log('comps');
+					console.log(comps);
+					var appointmentCards = []
+					for (var j = 0; j < comps.length; j++) {
+						appointmentCards.push(comps[j]);
+					}
+					component.set("v.appointmentCards", appointmentCards);
+				} else if (status === "INCOMPLETE") {
+					console.log("No response from server or client is offline.");
+				} else if (status === "ERROR") {
+					console.log("Error: " + errorMessage);
+					console.log(errorMessage);
+				}
+			}
+		);
+	},
+
+	updateSelect : function(component) {
+		var searchTerm = component.find("searchTerm").get("v.value").toUpperCase();
+		var appts = component.get("v.assignedAppointments");
+		var filteredAppts = appts.filter( a => (a.ServiceAppointment.Street != undefined && a.ServiceAppointment.Street.toUpperCase().includes(searchTerm)) ||
+				a.ServiceAppointment.Subject.toUpperCase().includes(searchTerm) || a.ServiceAppointment.SchedStartTime.includes(searchTerm));
+		component.set('v.filteredAppointments', filteredAppts);
 	},
 
 	getWOWrapper: function(component, saId) {
-		$A.util.toggleClass(component.find("loadingSpinner"), "slds-hide");
+//		$A.util.toggleClass(component.find("loadingSpinner"), "slds-hide");
 		var action = component.get("c.getWODetail");
 		action.setParams({
 			"saId": saId
 		});
 
 		action.setCallback(this, function(response) {
-			var name = response.getState();
-			if(name == "SUCCESS") {
-				//console.log('response.getReturnValue()');
-				//console.log(response.getReturnValue());
-				component.set('v.wo', response.getReturnValue());
+			var state = response.getState();
+			if(state === "SUCCESS") {
+				console.log('response.getReturnValue()');
+				console.log(response.getReturnValue());
+				var workWrapper = response.getReturnValue();
+				component.set('v.workWrapper', workWrapper);
+				component.set('v.woId', workWrapper.saWorkOrder.Id);
+				this.getExistingWorkOrderMaterials(component, workWrapper);
 
-				component.set('v.woliId', response.getReturnValue().saWOLI.Id);
-				var allProdCons = response.getReturnValue().saWOLI.ProductsConsumed;
-				// hoof this is ugly.
-				if(response.getReturnValue().saWOLI.TimeSheetEntries != undefined){
-					//console.log(response.getReturnValue().saWOLI.TimeSheetEntries);
-					if(allProdCons) {
-						var equipment = [];
-						var products = [];
+				var allProdCons = workWrapper.saWorkOrder.ProductsConsumed;
+				var timeSheetEntries = workWrapper.saWorkOrder.TimeSheetEntries;
 
-						for(var i = 0; i < allProdCons.length; i++) {
-							if(allProdCons[i].Product2.QuantityUnitOfMeasure == 'Per Hour') {
-								equipment.push(allProdCons[i]);
-							} else if(allProdCons[i].Product2.QuantityUnitOfMeasure == 'Each') {
-								products.push(allProdCons[i]);
-							}
+				var equipment = [];
+				var serviceResources = [];
+				var workOrderMaterials = !workWrapper.pwut_toc__Work_Order_Materials__r ? [] : workWrapper.pwut_toc__Work_Order_Materials__r;
+
+				if (allProdCons) {
+					allProdCons.forEach(function(pc){
+						if (pc.Product2.QuantityUnitOfMeasure == 'Per Hour') {
+							equipment.push({
+								"name": pc.Product2Id,
+								"res": pc.Product2.Name,
+								"dur": pc.QuantityConsumed * 60,
+								"status": pc.pwut_toc__Total_Cost__c
+							});
+						} else {
+							equipment.push({
+								"name": pc.Product2Id,
+								"res": pc.Product2.Name,
+								"dur": pc.QuantityConsumed,
+								"status": pc.pwut_toc__Total_Cost__c
+							});
 						}
-
-						this.treeGridHelper(component, equipment, 'eqOnly');
-						this.treeGridHelper(component, response.getReturnValue().saWOLI.TimeSheetEntries, 'srOnly');
-						$A.util.removeClass(component.find('srOnly'), "slds-hide");
-						$A.util.removeClass(component.find('eqOnly'), "slds-hide");
-					} else {
-						this.treeGridHelper(component, response.getReturnValue().saWOLI.TimeSheetEntries, 'srOnly');
-						$A.util.removeClass(component.find('srOnly'), "slds-hide");
-					}
-					$A.util.removeClass(component.find('srOnly'), "slds-hide");
-				} else if(response.getReturnValue().saWOLI.ProductsConsumed != undefined) {
-					this.treeGridHelper(component, response.getReturnValue().saWOLI.ProductsConsumed, 'eqOnly');
-					$A.util.removeClass(component.find('eqOnly'), "slds-hide");
+					});
 				}
 
-				this.getExistingPurch(component, response.getReturnValue().saWOLI.Id);
-				this.getExistingProd(component, response.getReturnValue().saWOLI.Id);
+				if (timeSheetEntries) {
+					timeSheetEntries.forEach(function(tse){
+						serviceResources.push({
+							"name": tse.Id,
+							"res": tse.TimeSheet.ServiceResource.Name,
+							"dur": tse.DurationInMinutes,
+							"status": tse.Status
+						});
+					});
+				}
 
+				component.set('v.eqOnlyGridData', equipment);
+				component.set('v.srOnlyGridData', serviceResources);
+				component.set('v.existingPurchaseList', workOrderMaterials);
+
+				$A.createComponent(
+					'c:RoWEditAppointment', {
+						'workWrapper' : workWrapper,
+						'crewGridData' : component.getReference('v.crewGridData'),
+						'terGridData' : component.getReference('v.terGridData'),
+						'equipGridData' : component.getReference('v.equipGridData'),
+						'eqOnlyGridData' : equipment,
+						'srOnlyGridData' : serviceResources,
+						'crewModal' : component.getReference('v.crewModal'),
+						'territoryModal' : component.getReference('v.territoryModal'),
+						'equipmentModal' : component.getReference('v.equipmentModal'),
+						'consumableModal' : component.getReference('v.consumableModal')
+					},
+					function(cmp, status, errorMessage){
+						console.log(status);
+						console.log(errorMessage);
+						if (status === "SUCCESS") {
+							console.log('cmp');
+							console.log(cmp);
+							component.set("v.editWrapper", cmp);
+						} else if (status === "INCOMPLETE") {
+							console.log("No response from server or client is offline.");
+						} else if (status === "ERROR") {
+							console.log("Error: " + errorMessage);
+							console.log(errorMessage);
+						}
+					}
+				);
 			} else {
 				alert('Issue in the getWOWrapper');
 			}
@@ -109,316 +192,236 @@
 		$A.enqueueAction(action);
 	},
 
-	getExistingPurch: function(component, woli) {
-		var action = component.get("c.getWOPurchs");
+	handleStatusUpdate : function(component, saId, status) {
+		var acsHelper = component.find('acsHelper');
+		var action = component.get("c.availableStatuses");
+
+		console.log('hi mom');
 		action.setParams({
-			"woli": woli
+			"saId": saId,
+			"status": status
 		});
 
 		action.setCallback(this, function(response) {
-			var name = response.getState();
-			if(name == "SUCCESS") {
-				component.set('v.existingPurchaseList', response.getReturnValue());
+			var state = response.getState();
+			if(state === "SUCCESS") {
+				console.log('status:');
+				console.log(response.getReturnValue());
+				var workWrapper = component.get('v.workWrapper');
+				workWrapper.serviceAppointment.Status = response.getReturnValue();
+				component.set('v.workWrapper', workWrapper);
+				acsHelper.showToast('success', 'Status Updated', 'The status was updated to ' + response.getReturnValue() + '.');
+			} else if (name === 'ERROR') {
+				console.log(response.errorMessage);
+				acsHelper.showToast('error', 'Please Review Error', 'There was an error updating the status.');
 			}
+			component.set('v.doingWork', false);
 		});
 
 		$A.enqueueAction(action);
 	},
 
-	getExistingProd: function(component, woli) {
-		var action = component.get("c.getWOProds");
-		action.setParams({
-			"woli": woli
-		});
-
-		action.setCallback(this, function(response) {
-			var name = response.getState();
-			if(name == "SUCCESS") {
-				var prods = response.getReturnValue();
-				var pcList = [];
-				for(var i = 0; i < prods.length; i++) {
-					if(prods[i].QuantityUnitOfMeasure == 'Each') {
-						pcList.push(prods[i]);
-					}
-				}
-				component.set('v.existingProductList', pcList);
-			}
-		});
-
-		$A.enqueueAction(action);
-	},
-
-	showDetailPage: function(component, recordId) {
-		$A.util.removeClass(component.find("viewRecordBtnModal"), "slds-hide");
-	},
-
-	swa: function(component, event) {
-		var modal;
-		var typeStr;
-		var duration;
-		var displayName;
-		var times;
-		var action = component.get("c.getCrewTime");
-		function getFirstPart(str) {
-			var keyword = str.toString();
-			var trackname = keyword.split(":");
-			return trackname[0];
-		}
-		var idx = event.getSource().getLocalId();
-		if(idx == 'saveCrewBtn') {
-			times = component.get("v.srTimeChanges");
-			modal = 'addCrewBtnModal';
-			typeStr = 'crew';
-
-		} else if(idx == 'saveTerBtn') {
-			times = component.get("v.srTimeChanges");
-			modal = 'addTerBtnModal';
-			typeStr = 'ter';
-
-		} else if(idx == 'saveEquipBtn') {
-			times = component.get("v.eqTimeChanges");
-			modal = 'addEquipBtnModal';
-			typeStr = 'equip';
-		} else if(idx == 'savePCBtn') {
-			times = component.get("v.pcQuantChanges");
-			modal = 'addProdBtnModal';
-			typeStr = 'prod';
-		} else {
-			console.log('caught the flu');
-		}
-		var wo = component.get("v.wo");
+	saveTimeChanges : function(component, type) {
+		var acsHelper = component.find('acsHelper');
+		var times = component.get('v.srTimeChanges');
+		var workWrapper = component.get('v.workWrapper');
+		var action = component.get("c.saveResourceTimes");
 		action.setParams({
 			"times": times,
-			"saId": component.get("v.saId").toString(),
-			"saveType": idx,
-			"wo": wo[0].saWOLI.WorkOrderId
+			"sa": workWrapper.serviceAppointment
 		});
-		console.log('TIMESTIMETSIMETISMETISEMTSIETMSET');
-		console.log(times);
 		action.setCallback(this, function(response) {
-			var name = response.getState();
-			if(name == "SUCCESS") {
-				$A.util.addClass(component.find(modal), 'slds-hide');
-				var objs = response.getReturnValue();
-				this.treeGridHelper(component, objs, typeStr);
-				$A.util.removeClass(component.find(typeStr + 'Tree'), "slds-hide");
-				this.getRes(component);
-			} else {
-				alert('Issue in the swa');
-				$A.util.removeClass(component.find(modal), "slds-hide");
-			}
-		});
-		component.set("v.equipmentTable", '');
-		component.set('v.srTimeChanges', '');
-		component.set('v.eqTimeChanges', '');
-		component.set('v.pcQuantChanges', '');
-		$A.enqueueAction(action);
-	},
-
-	treeGridHelper: function(component, objs, typeStr) {
-		var columns = [{
-				type: 'text',
-				fieldName: 'res',
-				label: 'Resource'
-			},
-			{
-				type: 'number',
-				fieldName: 'dur',
-				label: 'Duration'
-			},
-			{
-				type: 'text',
-				fieldName: 'status',
-				label: 'Status'
-		}];
-		component.set('v.' + typeStr + 'GridColumns', columns);
-		var nestedData = [];
-
-		Object.keys(objs).forEach(function(key) {
-			var obj = objs[key];
-
-			if(typeStr == 'srOnly') {
-				var nestedItem = {
-					"name": obj.Id,
-					"res": obj.TimeSheet.ServiceResource.Name,
-					"dur": obj.DurationInMinutes,
-					"status": obj.Status
-				};
-			} else if(typeStr == 'eqOnly') {
-                var nestedItem = {
-					"name": obj.Product2Id,
-					"res": obj.Product2.Name,
-					"dur": obj.QuantityConsumed * 60,
-					"status": 'Submitted'
-				};
-			} else {
-				if(obj.status.startsWith('Error')) {
-					alert('You encountered a system error: ' + obj.status);
+			var state = response.getState();
+			console.log(state);
+			if (state === "SUCCESS") {
+				var gridName;
+				if (type === 'crew') {
+					component.set('v.crewModal', false);
+					gridName = 'crewGridData';
+				} else if (type === 'territory') {
+					component.set('v.territoryModal', false);
+					gridName = 'terGridData';
+				} else {
+					component.set('v.doingWork', false);
+					acsHelper.showToast('error', 'Please Review Error', 'How did you get here?');
 					return;
 				}
-				var nestedItem = {
-					"name": obj.theId,
-					"res": obj.resource,
-					"dur": obj.duration,
-					"status": obj.status
-				};
-			}
-			nestedData.push(nestedItem);
-		});
 
-		component.set('v.' + typeStr + 'GridData', nestedData);
-	},
-
-	equipmentRowHelper: function(component, event) {
-		var today = new Date();
-		var monthDigit = today.getMonth() + 1;
-		if (monthDigit <= 9) {
-			monthDigit = '0' + monthDigit;
-		}
-		var itsNow = today.getFullYear() + "-" + monthDigit + "-" + today.getDate();
-
-		$A.createComponents(
-			[
-			["tr", {
-				"class": "slds-hint-parent"
-			}],
-
-			["ui:inputText",{
-				"scope": "row",
-				"role": "gridcell",
-				"class": "slds-truncate",
-				"change": component.getReference("c.setEquipName"),
-				"width": "50%"
-			}],
-			["ui:button", {
-				"scope": "row",
-				"type": "button",
-				"class": "slds-button slds-button_neutral findAssetBtn",
-				"label": "Find",
-				"role": "gridcell",
-				"aura:id": "findAssetBtn",
-				"press": component.getReference("c.searchAssets")
-			}]
-			],
-
-			function(comps, status, errorMessage){
-                if (status == "SUCCESS") {
-                    var table = component.get("v.equipmentTable");
-					comps.forEach(function(e) {
-						table.push(e);
+				var objs = response.getReturnValue();
+				var gridData = [];
+				objs.forEach(function(o){
+					gridData.push({
+						"name": o.theId,
+						"res": o.resource,
+						"dur": o.duration,
+						"status": o.status
 					});
-                    $A.util.addClass(component.find("thankYouBtn"), "slds-hide");
-                    component.set("v.equipmentTable", table);
-                }
-                else if (status == "INCOMPLETE") {
-                    console.log("No response from server or client is offline.")
-					alert('Incomplete Session - check connectivity.  If issue persists contact IT');
-                    // Show offline error
-                }
-                else if (status == "ERROR") {
-                    console.log("Error: " + errorMessage);
-                    alert('Error in session. Contact IT.');
-                }
-            }
-		);
-	},
-
-	prodPurchRowHelper: function(component, event) {
-		var wo = component.get("v.wo");
-		var idx = event.target.id;
-		console.log(idx);
-		var createRecordEvent = $A.get("e.force:createRecord");
-		var obj;
-		var defaultVals = {};
-		if(idx == 'prodBtn') {
-			obj = "ProductConsumed";
-			defaultVals['WorkOrderLineItemId'] = wo[0].saWOLI.Id;
-			defaultVals['QuantityConsumed'] = '1';
-			defaultVals['WorkOrderId'] = wo[0].saWOLI.WorkOrderId;
-			// might need to have the person search for a product and get it's id from the correct pricebook in order to get this done.
-			//defaultVals['PricebookEntryId'] = '01u2F000002sddTQAQ';
-
-		} else if (idx == 'purchBtn') {
-			obj = "Work_Order_Mater__c";
-			defaultVals['Quantity__c'] = '1';
-			defaultVals['WorkOrderLineItem__c'] = wo[0].saWOLI.Id;
-			defaultVals['Transaction_Date__c'] = wo[0].saWOLI.WorkOrder.Due_Date__c;
-		} else {
-			alert('huh...what button did you press?');
-		}
-
-
-		createRecordEvent.setParams({
-			"entityApiName": obj,
-			"defaultFieldValues": defaultVals
+				});
+				component.set('v.' + gridName, gridData);
+				component.set('v.srTimeChanges', '');
+				this.getServiceResources(component);
+			} else {
+				console.log(response.errorMessage);
+				acsHelper.showToast('error', 'Please Review Error', 'There was an error saving the service appointment changes.');
+			}
+			component.set('v.doingWork', false);
 		});
-
-		createRecordEvent.fire();
+		$A.enqueueAction(action);
 	},
 
-	checkForProd: function(component, event) {
-		var action = component.get("c.searchProds");
+	saveAppointmentProducts : function(component, productList) {
+		component.set('v.doingWork', true);
+		var acsHelper = component.find('acsHelper');
+		console.log(productList);
+		var workWrapper = component.get('v.workWrapper');
+		var action = component.get("c.saveProductsConsumed");
 		action.setParams({
-			"saId": component.get("v.saId").toString(),
-			"searchTerm": event.getSource().get("v.value")
+			"productList": productList,
+			"sa": workWrapper.serviceAppointment
+		});
+		action.setCallback(this, function(response) {
+			var state = response.getState();
+			console.log(state);
+			if (state === "SUCCESS") {
+				component.set('v.equipmentModal', false);
+
+				var objs = response.getReturnValue();
+				var gridData = [];
+				objs.forEach(function(o){
+					gridData.push({
+						"name": o.theId,
+						"res": o.resource,
+						"dur": o.duration,
+						"status": o.status
+					});
+				});
+				component.set('v.equipGridData', gridData);
+				component.set('v.eqTimeChanges', '');
+				component.set('v.pcQuantChanges', '');
+				this.getServiceResources(component);
+			} else {
+				console.log(response.errorMessage);
+				acsHelper.showToast('error', 'Please Review Error', 'There was an error saving the service appointment changes.');
+			}
+			component.set('v.doingWork', false);
+		});
+		$A.enqueueAction(action);
+	},
+
+	createCmp : function(component, cmp, attributes, varName) {
+		$A.createComponent(cmp, attributes, function(newCmp, status, errorMessage){
+			if (status === "SUCCESS") {
+				var objList = component.get(varName);
+				objList.push(newCmp);
+				component.set(varName, objList);
+			}
+			else if (status === "INCOMPLETE") {
+				console.log("No response from server or client is offline.")
+				// Show offline error
+			}
+			else if (status === "ERROR") {
+				console.log("Error: " + errorMessage);
+				// Show error message
+			}
+		});
+	},
+
+	handleNewAddOn : function(component, newObject, auraId, type) {
+		console.log('IN NEW ADDON HELPER FUNCTION');
+		var objectList = this.getObjectList(component, type);
+		objectList[auraId] = newObject;
+		this.updateObject(component, objectList, type);
+	},
+
+	removeAddOn : function(component, auraId, type) {
+		var objectList = this.getObjectList(component, type);
+		delete objectList[auraId];
+		this.updateObject(component, objectList, type);
+		var compList = component.get('v.' + type.toLowerCase() + 's');
+		if (compList.length === 1) {
+			component.set('v.' + type.toLowerCase() + 's', []);
+		} else {
+			var index = compList.findIndex(cmp => cmp.get('v.auraId') == auraId);
+			compList.splice(index, 1);
+			component.set('v.' + type.toLowerCase() + 's', compList);
+		}
+	},
+
+	getObjectList : function(component, type) {
+		var result = null;
+		if (type === 'WORKORDERMATERIAL') {
+			result = component.get('v.workOrderMaterialList');
+		} else if (type === 'EQUIPMENT') {
+			result = component.get('v.equipmentList');
+		}
+		if (!result) {
+			result = {};
+		}
+		return result;
+	},
+
+	updateObject : function(component, objectList, type) {
+		if (type === 'WORKORDERMATERIAL') {
+			component.set('v.workOrderMaterialList', objectList);
+		} else if (type === 'EQUIPMENT') {
+			component.set('v.equipmentList', objectList);
+		}
+	},
+
+	saveWorkOrderMats : function(component, workOrderMaterialList) {
+		component.set('v.doingWork', true);
+		var acsHelper = component.find('acsHelper');
+		console.log(workOrderMaterialList);
+		var workWrapper = component.get('v.workWrapper');
+		var action = component.get("c.saveWorkOrderMaterials");
+		action.setParams({
+			"materialList": workOrderMaterialList,
+			"sa": workWrapper.serviceAppointment
+		});
+		action.setCallback(this, function(response) {
+			var state = response.getState();
+			console.log(state);
+			if (state === "SUCCESS") {
+				component.set('v.consumableModal', false);
+				console.log(response.getReturnValue());
+				this.getExistingWorkOrderMaterials(component, workWrapper);
+			} else {
+				console.log(response.errorMessage);
+				acsHelper.showToast('error', 'Please Review Error', 'There was an error saving the service appointment changes.');
+			}
+			component.set('v.doingWork', false);
+		});
+		$A.enqueueAction(action);
+	},
+
+	getExistingWorkOrderMaterials : function(component, workWrapper) {
+		component.set('v.workOrderMaterialList', []);
+		component.set('v.workOrderMaterials', {});
+		var self = this;
+		var action = component.get("c.getWorkOrderMaterials");
+		action.setParams({
+			"workWrapper": workWrapper
 		});
 
 		action.setCallback(this, function(response) {
-			var name = response.getState();
-			if(name == "SUCCESS" && response.getReturnValue() != 'noProd') {
-				var prod = response.getReturnValue();
-
-				component.set('v.prodName', prod.Name);
-				console.log('prod');
-				console.log(prod);
-
-				$A.createComponents(
-					[
-						["div", {
-							"aura:id": "",
-							"class": "slds-card"
-						}],
-						["div", {
-							"aura:id": "prodQuantInput",
-							"html": "Selected Product: ",
-							"background-color": "grey;"
-						}],
-						["div", {
-							"aura:id": prod.Id
-						}],
-						["ui:inputText", {
-							"disabled": "true",
-							"value": component.get("v.prodName"),
-							"class": "slds-truncate"
-						}],
-						["ui:inputText",{
-							"class": "slds-truncate",
-							"change": component.getReference("c.setProdQuant"),
-							"aura:id": prod.Id
-						}],
-						["br", {}]
-					],
-					function(comps, status, errorMessage){
-						if (status == "SUCCESS") {
-							console.log('comps');
-							console.log(comps);
-							var table = component.get("v.prodTable");
-							$A.util.removeClass(component.find("prodForm"), "slds-hide");
-							comps.forEach(function(e) {
-								table.push(e);
-							});
-
-							//$A.util.addClass(component.find("thankYouBtn"), "slds-hide");
-							component.set("v.prodTable", table);
-						}
-					}
-				);
-
-
+			var state = response.getState();
+			console.log(state);
+			if (state == "SUCCESS") {
+				var materialsList = response.getReturnValue();
+				console.log(materialList);
+				materialList.forEach(function(mat) {
+					console.log(mat);
+					var auraId = "workOrderMaterial" + Date.now();
+					var attributes = {
+						"auraId" : auraId,
+						"aura:Id" : auraId
+					};
+					self.createCmp(component, 'c:AddWorkOrderMaterial', attributes, 'v.workOrderMaterials');
+				});
 			}
 		});
 
 		$A.enqueueAction(action);
-
 	}
+
 })
