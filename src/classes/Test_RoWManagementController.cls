@@ -714,8 +714,9 @@ private class Test_RoWManagementController {
 
 		List<pwut_toc__Work_Order_Material__c> retrievedList = RoWManagementController.getWorkOrderMaterials(work);
 		System.assertEquals(3, retrievedList.size());
-		System.assertEquals(24, retrievedList[0].pwut_toc__Total_Cost__c);
-		System.assertEquals(10, retrievedList[2].pwut_toc__Total_Cost__c);
+		System.assertEquals(10, retrievedList[0].pwut_toc__Total_Cost__c);
+		System.assertEquals(18, retrievedList[1].pwut_toc__Total_Cost__c);
+		System.assertEquals(24, retrievedList[2].pwut_toc__Total_Cost__c);
 
 		retrievedList[0].pwut_toc__Quantity__c = 4;
 		List<pwut_toc__Work_Order_Material__c> upsertList = RoWManagementController.saveWorkOrderMaterials(retrievedList, sa);
@@ -726,8 +727,9 @@ private class Test_RoWManagementController {
 				[SELECT Id, pwut_toc__Cost__c, pwut_toc__Quantity__c, pwut_toc__Total_Cost__c, pwut_toc__Item_Description__c
 				FROM pwut_toc__Work_Order_Material__c
 				ORDER BY pwut_toc__Total_Cost__c];
-		System.assertEquals(24, finalList[0].pwut_toc__Total_Cost__c);
-		System.assertEquals(10, finalList[2].pwut_toc__Total_Cost__c);
+		System.assertEquals(8, finalList[0].pwut_toc__Total_Cost__c);
+		System.assertEquals(18, finalList[1].pwut_toc__Total_Cost__c);
+		System.assertEquals(24, finalList[2].pwut_toc__Total_Cost__c);
 	}
 
 }
