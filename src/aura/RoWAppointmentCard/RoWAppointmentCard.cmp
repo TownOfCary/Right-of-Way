@@ -1,0 +1,52 @@
+<aura:component>
+
+    <!--  PARENT ATTRS -->
+    <aura:attribute name="resource" type="Object" />
+
+    <!-- ??? ATTRS -->
+
+
+    <!-- Picklist Fields -->
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+    <aura:registerEvent name="editAppointment" type="c:EditAppointment" />
+
+    <base_toc:ACSHelper aura:id="acsHelper" />
+
+    <article class="slds-card">
+        <div class="slds-card__header">
+            <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                <div class="slds-media__figure">
+                    <span class="slds-icon_container slds-icon-standard-contact">
+                        <lightning:icon iconName="standard:service_appointment" />
+                    </span>
+                </div>
+                <div class="slds-media__body">
+                    <h2 class="slds-grid">
+                        <a href="javascript:void(0);" onclick="{!c.fireEvent}" class="slds-card__header-link slds-truncate slds-size_2-of-3 slds-wrap">
+                            <span class="slds-text-heading_small">{!v.resource.ServiceAppointment.Subject}</span>
+                        </a>
+                        <div class="slds-size_1-of-3 slds-wrap">
+                            <div class="slds-no-flex">
+                                <button class="slds-button slds-button_neutral editSABtn slds-float_right" onclick="{!c.fireEvent}">Edit</button>
+                            </div>
+                        </div>
+                    </h2>
+                </div>
+            </header>
+        </div>
+        <div class="slds-card__body slds-card__body_inner">
+            <ul class="slds-wrap">
+                <li>Scheduled: <ui:outputDate value="{!v.resource.ServiceAppointment.SchedStartTime}" /></li>
+                <li>Street: {!v.resource.ServiceAppointment.Street}</li>
+                <li>Status: {!v.resource.ServiceAppointment.Status}</li>
+                <li>Duration: {!v.resource.ServiceAppointment.Duration}</li>
+            </ul>
+
+        </div>
+        <footer class="slds-border_bottom">
+            <p style="font-size: 10px; text-align: center; padding-bottom: 5px;">Appointment Number: {!v.resource.ServiceAppointment.AppointmentNumber}</p>
+        </footer>
+    </article>
+</aura:component>
